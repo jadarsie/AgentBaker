@@ -100,6 +100,7 @@ echo $(date),$(hostname), "End configuring GPU drivers"
 
 
 installKubeletKubectlAndKubeProxy
+installKubeletKubectlAndKubeadm
 
 if [[ $OS != $COREOS_OS_NAME ]]; then
     ensureRPC

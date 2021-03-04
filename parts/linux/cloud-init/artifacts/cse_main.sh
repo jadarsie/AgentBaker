@@ -116,6 +116,7 @@ docker login -u $SERVICE_PRINCIPAL_CLIENT_ID -p $SERVICE_PRINCIPAL_CLIENT_SECRET
 {{end}}
 
 installKubeletKubectlAndKubeProxy
+installKubeletKubectlAndKubeadm
 
 if [[ $OS != $COREOS_OS_NAME ]]; then
     ensureRPC

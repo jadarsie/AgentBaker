@@ -1,18 +1,24 @@
 #!/bin/bash
 mkdir -p /root/AzureCACertificates
 # http://168.63.129.16 is a constant for the host's wireserver endpoint
-certs=$(curl "http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json")
-IFS_backup=$IFS
-IFS=$'\r\n'
-certNames=($(echo $certs | grep -oP '(?<=Name\": \")[^\"]*'))
-certBodies=($(echo $certs | grep -oP '(?<=CertBody\": \")[^\"]*'))
-for i in ${!certBodies[@]}; do
-    echo ${certBodies[$i]}  | sed 's/\\r\\n/\n/g' | sed 's/\\//g' > "/root/AzureCACertificates/$(echo ${certNames[$i]} | sed 's/.cer/.crt/g')"
-done
-IFS=$IFS_backup
+# certs=$(curl "http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json")
+# IFS_backup=$IFS
+# IFS=$'\r\n'
+# certNames=($(echo $certs | grep -oP '(?<=Name\": \")[^\"]*'))
+# certBodies=($(echo $certs | grep -oP '(?<=CertBody\": \")[^\"]*'))
+# for i in ${!certBodies[@]}; do
+#     echo ${certBodies[$i]}  | sed 's/\\r\\n/\n/g' | sed 's/\\//g' > "/root/AzureCACertificates/$(echo ${certNames[$i]} | sed 's/.cer/.crt/g')"
+# done
+# IFS=$IFS_backup
 
-cp /root/AzureCACertificates/*.crt /usr/local/share/ca-certificates/
-/usr/sbin/update-ca-certificates
+# cp /root/AzureCACertificates/*.crt /usr/local/share/ca-certificates/
+# /usr/sbin/update-ca-certificates
+
+# Copying the AzureStack root certificate to the appropriate store to be updated.
+AZURESTACK_ROOT_CERTIFICATE_SOURCE_PATH="/var/lib/waagent/Certificates.pem"
+AZURESTACK_ROOT_CERTIFICATE__DEST_PATH="/usr/local/share/ca-certificates/azsCertificate.crt"
+cp $AZURESTACK_ROOT_CERTIFICATE_SOURCE_PATH $AZURESTACK_ROOT_CERTIFICATE__DEST_PATH
+update-ca-certificates
 
 # This copies the updated bundle to the location used by OpenSSL which is commonly used
 cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem

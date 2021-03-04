@@ -257,6 +257,16 @@ extractKubeBinaries() {
     rm -f "$K8S_DOWNLOADS_DIR/${K8S_TGZ_TMP}"
 }
 
+installKubeletKubectlAndKubeadm() {
+    # Download kubernetes binaries
+    retrycmd_get_tarball 120 5 kubernetes-server-linux-amd64.tar.gz https://k8sreleases.blob.core.windows.net/kubernetes/v$KUBERNETES_VERSION-azs/binaries/kubernetes-server-linux-amd64.tar.gz || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90  tar -xvzf kubernetes-server-linux-amd64.tar.gz kubernetes/server/bin/kubelet kubernetes/server/bin/kubeadm kubernetes/server/bin/kubectl --strip-components=3 || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f kubelet /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f  kubeadm /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f kubectl /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 rm -f kubernetes-server-linux-amd64.tar.gz || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+}
+
 extractHyperkube() {
     CLI_TOOL=$1
     path="/home/hyperkube-downloads/${KUBERNETES_VERSION}"

@@ -661,7 +661,7 @@ type ContainerService struct {
 // IsAKSCustomCloud checks if it's in AKS custom cloud
 func (cs *ContainerService) IsAKSCustomCloud() bool {
 	return cs.Properties.CustomCloudEnv != nil &&
-		strings.EqualFold(cs.Properties.CustomCloudEnv.Name, "akscustom")
+		(strings.EqualFold(cs.Properties.CustomCloudEnv.Name, "akscustom") || strings.EqualFold(cs.Properties.CustomCloudEnv.Name, "azurestackcloud"))
 }
 
 // GetLocations returns all supported regions.
@@ -733,7 +733,7 @@ func (p *Properties) HasAvailabilityZones() bool {
 // IsAKSCustomCloud checks if it's in AKS custom cloud
 func (p *Properties) IsAKSCustomCloud() bool {
 	return p.CustomCloudEnv != nil &&
-		strings.EqualFold(p.CustomCloudEnv.Name, "akscustom")
+		(strings.EqualFold(p.CustomCloudEnv.Name, "akscustom") || strings.EqualFold(p.CustomCloudEnv.Name, "azurestackcloud"))
 }
 
 // IsIPMasqAgentEnabled returns true if the cluster has a hosted master and IpMasqAgent is disabled

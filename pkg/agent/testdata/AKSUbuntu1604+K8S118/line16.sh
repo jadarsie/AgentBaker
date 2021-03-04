@@ -86,6 +86,7 @@ installContainerRuntime
 installNetworkPlugin
 
 installKubeletKubectlAndKubeProxy
+installKubeletKubectlAndKubeadm
 
 if [[ $OS != $COREOS_OS_NAME ]]; then
     ensureRPC

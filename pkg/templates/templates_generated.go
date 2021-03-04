@@ -1246,7 +1246,7 @@ retrycmd_get_tarball() {
         if [ $i -eq $tar_retries ]; then
             return 1
         else
-            timeout 60 curl -fsSL $url -o $tarball
+            timeout 600 curl -fsSL $url -o $tarball
             sleep $wait_sleep
         fi
     done
@@ -1721,6 +1721,16 @@ extractKubeBinaries() {
     rm -f "$K8S_DOWNLOADS_DIR/${K8S_TGZ_TMP}"
 }
 
+installKubeletKubectlAndKubeadm() {
+    # Download kubernetes binaries
+    retrycmd_get_tarball 120 5 kubernetes-server-linux-amd64.tar.gz https://k8sreleases.blob.core.windows.net/kubernetes/v$KUBERNETES_VERSION-azs/binaries/kubernetes-server-linux-amd64.tar.gz || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90  tar -xvzf kubernetes-server-linux-amd64.tar.gz kubernetes/server/bin/kubelet kubernetes/server/bin/kubeadm kubernetes/server/bin/kubectl --strip-components=3 || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f kubelet /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f  kubeadm /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 mv -f kubectl /usr/local/bin || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 5 5 90 rm -f kubernetes-server-linux-amd64.tar.gz || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+}
+
 extractHyperkube() {
     CLI_TOOL=$1
     path="/home/hyperkube-downloads/${KUBERNETES_VERSION}"
@@ -2001,6 +2011,7 @@ docker login -u $SERVICE_PRINCIPAL_CLIENT_ID -p $SERVICE_PRINCIPAL_CLIENT_SECRET
 {{end}}
 
 installKubeletKubectlAndKubeProxy
+installKubeletKubectlAndKubeadm
 
 if [[ $OS != $COREOS_OS_NAME ]]; then
     ensureRPC
@@ -2445,18 +2456,24 @@ func linuxCloudInitArtifactsHealthMonitorSh() (*asset, error) {
 var _linuxCloudInitArtifactsInitAksCustomCloudSh = []byte(`#!/bin/bash
 mkdir -p /root/AzureCACertificates
 # http://168.63.129.16 is a constant for the host's wireserver endpoint
-certs=$(curl "http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json")
-IFS_backup=$IFS
-IFS=$'\r\n'
-certNames=($(echo $certs | grep -oP '(?<=Name\": \")[^\"]*'))
-certBodies=($(echo $certs | grep -oP '(?<=CertBody\": \")[^\"]*'))
-for i in ${!certBodies[@]}; do
-    echo ${certBodies[$i]}  | sed 's/\\r\\n/\n/g' | sed 's/\\//g' > "/root/AzureCACertificates/$(echo ${certNames[$i]} | sed 's/.cer/.crt/g')"
-done
-IFS=$IFS_backup
+# certs=$(curl "http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json")
+# IFS_backup=$IFS
+# IFS=$'\r\n'
+# certNames=($(echo $certs | grep -oP '(?<=Name\": \")[^\"]*'))
+# certBodies=($(echo $certs | grep -oP '(?<=CertBody\": \")[^\"]*'))
+# for i in ${!certBodies[@]}; do
+#     echo ${certBodies[$i]}  | sed 's/\\r\\n/\n/g' | sed 's/\\//g' > "/root/AzureCACertificates/$(echo ${certNames[$i]} | sed 's/.cer/.crt/g')"
+# done
+# IFS=$IFS_backup
 
-cp /root/AzureCACertificates/*.crt /usr/local/share/ca-certificates/
-/usr/sbin/update-ca-certificates
+# cp /root/AzureCACertificates/*.crt /usr/local/share/ca-certificates/
+# /usr/sbin/update-ca-certificates
+
+# Copying the AzureStack root certificate to the appropriate store to be updated.
+AZURESTACK_ROOT_CERTIFICATE_SOURCE_PATH="/var/lib/waagent/Certificates.pem"
+AZURESTACK_ROOT_CERTIFICATE__DEST_PATH="/usr/local/share/ca-certificates/azsCertificate.crt"
+cp $AZURESTACK_ROOT_CERTIFICATE_SOURCE_PATH $AZURESTACK_ROOT_CERTIFICATE__DEST_PATH
+update-ca-certificates
 
 # This copies the updated bundle to the location used by OpenSSL which is commonly used
 cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
