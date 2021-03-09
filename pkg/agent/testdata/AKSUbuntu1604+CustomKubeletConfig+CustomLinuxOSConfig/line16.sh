@@ -97,6 +97,7 @@ createKubeManifestDir
 configureK8s
 
 configureCNI
+configureAzureStackInterfaces
 
 
 ensureDocker

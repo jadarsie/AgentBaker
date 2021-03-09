@@ -101,6 +101,7 @@ createKubeManifestDir
 configureK8s
 
 configureCNI
+configureAzureStackInterfaces
 
 
 ensureContainerd 
