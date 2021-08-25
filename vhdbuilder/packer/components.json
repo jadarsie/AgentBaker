@@ -43,7 +43,8 @@
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/metrics-server:*",
       "versions": [
         "v0.3.6",
-        "v0.4.4"
+        "v0.4.4",
+        "v0.5.0"
       ]
     },
     {
@@ -58,6 +59,7 @@
         "1.2.0",
         "1.3.1",
         "1.4.0",
+        "3.2",
         "3.5"
       ]
     },
@@ -66,7 +68,9 @@
       "versions": [
         "1.8.4",
         "1.8.3",
-        "1.6.6"
+        "1.6.6",
+        "1.6.7",
+        "1.7.0"
       ]
     },
     {
@@ -240,6 +244,7 @@
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/ip-masq-agent:*",
       "versions": [
+        "v2.5.0",
         "v2.5.0.4",
         "v2.5.0.5",
         "v2.5.0.6"
@@ -255,7 +260,8 @@
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:*",
       "versions": [
         "v1.4.0",
-        "v1.5.0"
+        "v1.5.0",
+        "v1.5.1"
       ]
     },
     {
@@ -353,6 +359,83 @@
       "downloadURL": "mcr.microsoft.com/aks/command/init:*",
       "versions": [
         "master.210524.9"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/etcd-io/etcd:*",
+      "versions": [
+        "v3.4.3",
+        "v3.4.13"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-apiserver:*",
+      "versions": [
+        "v1.19.10-azs",
+        "v1.19.11-azs",
+        "v1.20.6-azs",
+        "v1.20.7-azs"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-controller-manager:*",
+      "versions": [
+        "v1.19.10-azs",
+        "v1.19.11-azs",
+        "v1.20.6-azs",
+        "v1.20.7-azs"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-scheduler:*",
+      "versions": [
+        "v1.19.10-azs",
+        "v1.19.11-azs",
+        "v1.20.6-azs",
+        "v1.20.7-azs"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/azure/aad-pod-identity/nmi:*",
+      "versions": [
+        "v1.6.3",
+        "v1.7.0"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-attacher:*",
+      "versions": [
+        "v3.1.0"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner:*",
+      "versions": [
+        "v2.1.1"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-resizer:*",
+      "versions": [
+        "v1.1.0"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-snapshotter:*",
+      "versions": [
+        "v3.0.3"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/snapshot-controller:*",
+      "versions": [
+        "v3.0.3"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-state-metrics:*",
+      "versions": [
+        "v1.9.8"
       ]
     }
   ],

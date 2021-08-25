@@ -6,8 +6,12 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"regexp"
@@ -606,4 +610,40 @@ func ParseCSEMessage(message string) (*datamodel.CSEStatus, *datamodel.CSEStatus
 		return &cseStatus, nil
 	}
 	return nil, datamodel.NewError(datamodel.InvalidCSEMessage, message)
+}
+
+func certificateHash(certificateData string) (string, error) {
+	certs, err := parseCertsPEM([]byte(certificateData))
+	if err != nil {
+		return "", err
+	}
+	if len(certs) > 1 {
+		return "", errors.New("data contains more than one certificate")
+	}
+	spkiHash := sha256.Sum256(certs[0].RawSubjectPublicKeyInfo)
+	return fmt.Sprintf("sha256:%s", strings.ToLower(hex.EncodeToString(spkiHash[:]))), nil
+}
+
+func parseCertsPEM(pemCerts []byte) ([]*x509.Certificate, error) {
+	certs := []*x509.Certificate{}
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
+		}
+		// Only use PEM "CERTIFICATE" blocks without extra headers
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return certs, err
+		}
+		certs = append(certs, cert)
+	}
+	if len(certs) == 0 {
+		return certs, errors.New("data does not contain any valid RSA or ECDSA certificates")
+	}
+	return certs, nil
 }

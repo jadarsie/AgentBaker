@@ -22,7 +22,8 @@ cleanupContainerdDlFiles() {
 installContainerRuntime() {
     {{if NeedsContainerd}}
         installStandaloneContainerd ${CONTAINERD_VERSION}
-    {{else}}
+    {{end}}
+    {{if NeedsDocker}}
         installMoby
     {{end}}
 }
@@ -153,7 +154,7 @@ extractKubeBinaries() {
     K8S_TGZ_TMP=${KUBE_BINARY_URL##*/}
     retrycmd_get_tarball 120 5 "$K8S_DOWNLOADS_DIR/${K8S_TGZ_TMP}" ${KUBE_BINARY_URL} || exit $ERR_K8S_DOWNLOAD_TIMEOUT
     tar --transform="s|.*|&-${K8S_VERSION}|" --show-transformed-names -xzvf "$K8S_DOWNLOADS_DIR/${K8S_TGZ_TMP}" \
-        --strip-components=3 -C /usr/local/bin kubernetes/node/bin/kubelet kubernetes/node/bin/kubectl
+        --strip-components=3 -C /usr/local/bin kubernetes/node/bin/kubelet kubernetes/node/bin/kubectl kubernetes/node/bin/kubeadm
     rm -f "$K8S_DOWNLOADS_DIR/${K8S_TGZ_TMP}"
 }
 
@@ -183,7 +184,21 @@ extractHyperkube() {
     mv "$path/hyperkube" "/usr/local/bin/kubectl-${KUBERNETES_VERSION}"
 }
 
-installKubeletKubectlAndKubeProxy() {
+extractEtcdctl() {
+	ETCD_URL=mcr.microsoft.com/oss/etcd-io/etcd:{{EtcdVersion}}
+    path="/tmp/etcdctl-downloads/{{EtcdVersion}}"
+    mkdir -p "$path"
+
+    if [[ "$CLI_TOOL" == "crictl" ]]; then    
+		ctr --namespace k8s.io run --rm --mount type=bind,src=$path,dst=$path,options=bind:rw ${ETCD_URL} extractTask /bin/sh -c "cp /usr/local/bin/etcdctl $path"
+    else 
+        docker run --rm --entrypoint "" -v $path:$path ${ETCD_URL} /bin/sh -c "cp /usr/local/bin/etcdctl $path"
+    fi
+
+    mv "$path/etcdctl" "/usr/local/bin/etcdctl"
+}
+
+installKubeletKubectlKubeadmAndKubeProxy() {
     if [[ ! -f "/usr/local/bin/kubectl-${KUBERNETES_VERSION}" ]]; then
         #TODO: remove the condition check on KUBE_BINARY_URL once RP change is released
         if (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) >= 17)) && [ -n "${KUBE_BINARY_URL}" ]; then
@@ -199,8 +214,9 @@ installKubeletKubectlAndKubeProxy() {
 
     mv "/usr/local/bin/kubelet-${KUBERNETES_VERSION}" "/usr/local/bin/kubelet"
     mv "/usr/local/bin/kubectl-${KUBERNETES_VERSION}" "/usr/local/bin/kubectl"
-    chmod a+x /usr/local/bin/kubelet /usr/local/bin/kubectl
-    rm -rf /usr/local/bin/kubelet-* /usr/local/bin/kubectl-* /home/hyperkube-downloads &
+    mv "/usr/local/bin/kubeadm-${KUBERNETES_VERSION}" "/usr/local/bin/kubeadm"
+    chmod a+x /usr/local/bin/kubelet /usr/local/bin/kubectl /usr/local/bin/kubeadm
+    rm -rf /usr/local/bin/kubelet-* /usr/local/bin/kubectl-* /usr/local/bin/kubeadm-* /home/hyperkube-downloads &
 
     if [ -n "${KUBEPROXY_URL}" ]; then
         #kubeproxy is a system addon that is dictated by control plane so it shouldn't block node provisioning

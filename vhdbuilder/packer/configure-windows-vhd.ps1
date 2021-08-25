@@ -135,8 +135,7 @@ function Get-FilesToCacheOnVHD {
                 }
             }
 
-            $dest = [IO.Path]::Combine($dir, $fileName)
-
+            $dest = [IO.Path]::Combine($dir, $fileName.Replace("-azs", ""))
             Write-Log "Downloading $URL to $dest"
             DownloadFileWithRetry -URL $URL -Dest $dest
         }

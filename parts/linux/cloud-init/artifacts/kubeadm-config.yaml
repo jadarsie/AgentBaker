@@ -1,0 +1,124 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+etcd:
+  local:
+    imageRepository: mcr.microsoft.com/oss/etcd-io
+    imageTag: {{EtcdVersion}}
+    dataDir: /var/lib/etcddisk/etcd
+    extraArgs:
+      election-timeout: "2500"
+      heartbeat-interval: "250"
+      snapshot-count: "5000"
+networking:
+  podSubnet: {{PodCIDR}}
+  serviceSubnet: {{ServiceCidr}}
+kubernetesVersion: v{{KubernetesVersion}}-azs
+controlPlaneEndpoint: {{GetKubernetesEndpoint}}
+apiServer:
+  extraArgs:
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+    audit-log-path: /var/log/kubeaudit/audit.log
+    audit-policy-file: /etc/kubernetes/audit/audit-policy.yaml
+    audit-log-maxage: "30"
+    audit-log-maxbackup: "10"
+    audit-log-maxsize: "100"
+  extraVolumes:
+  - hostPath: /etc/kubernetes/azure.json
+    mountPath: /etc/kubernetes/azure.json
+    name: cloud-config
+    readOnly: true
+  - hostPath: /etc/kubernetes/audit/audit-policy.yaml
+    mountPath: /etc/kubernetes/audit/audit-policy.yaml
+    name: audit-policy-file
+    readOnly: true
+  - hostPath: /var/log/kubeaudit
+    mountPath: /var/log/kubeaudit
+    name: auditlog
+    readOnly: false
+  certSANs:
+  - 127.0.0.1
+  - localhost
+  timeoutForControlPlane: 7m0s
+controllerManager:
+  extraArgs:
+    allocate-node-cidrs: "{{IsKubenet}}"
+    configure-cloud-routes: "{{IsKubenet}}"
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+    cluster-name: {{ResourceGroupName}}
+  extraVolumes:
+  - hostPath: /etc/kubernetes/azure.json
+    mountPath: /etc/kubernetes/azure.json
+    name: cloud-config
+    readOnly: true
+  - hostPath: /etc/kubernetes/{{GetTargetEnvironment}}.json
+    mountPath: /etc/kubernetes/{{GetTargetEnvironment}}.json
+    name: cloud-config-stack
+    readOnly: true
+dns:
+  type: CoreDNS
+imageRepository: mcr.microsoft.com/oss/kubernetes
+clusterName: {{ResourceGroupName}}
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- token: {{BootstrapToken}}
+  ttl: 24h
+  usages:
+  - authentication
+  - signing
+  groups:
+  - system:bootstrappers:kubeadm:default-node-token
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    value: "true"
+  kubeletExtraArgs:
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+    node-labels: {{GetCPKubernetesLabels}}
+    network-plugin: {{NetworkPluging}}
+    non-masquerade-cidr: {{NonMasqueradeCIDR}}
+    cgroup-driver: "{{CGroupDriver}}"
+localAPIEndpoint:
+  advertiseAddress: ""
+  bindPort: 443
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: JoinConfiguration
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    value: "true"
+  kubeletExtraArgs:
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+    node-labels: {{GetCPKubernetesLabels}}
+    network-plugin: {{NetworkPluging}}
+    non-masquerade-cidr: {{NonMasqueradeCIDR}}
+    cgroup-driver: "{{CGroupDriver}}"
+discovery:
+  bootstrapToken:
+    token: {{BootstrapToken}}
+    apiServerEndpoint: {{GetKubernetesEndpoint}}:443
+    caCertHashes:
+    - {{CACertificateHash}}
+  timeout: 5m
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: ""
+    bindPort: 443
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+clusterDNS:
+- {{DNSServiceIP}}
+maxPods: {{MaxPods}}
+#EOF

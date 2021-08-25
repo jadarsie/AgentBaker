@@ -43,6 +43,8 @@ const (
 	BasicLoadBalancerSku = "Basic"
 	// StandardLoadBalancerSku is the string const for Azure Standard Load Balancer
 	StandardLoadBalancerSku = "Standard"
+	// AzureStackCloud is the string const for Azure Stack Cloud
+	AzureStackCloud = "azurestackcloud"
 )
 
 const (
@@ -96,6 +98,11 @@ const (
 	kubernetesCISScript               = "linux/cloud-init/artifacts/cis.sh"
 	kubernetesHealthMonitorScript     = "linux/cloud-init/artifacts/health-monitor.sh"
 	// kubernetesKubeletMonitorSystemdTimer     = "linux/cloud-init/artifacts/kubelet-monitor.timer" // TODO enable
+	kubeadmConfig                             = "linux/cloud-init/artifacts/kubeadm-config.yaml"
+	ipMasqAgentConfigmap                      = "linux/cloud-init/artifacts/ip-masq-agent-configmap.yaml"
+	corednsKustomization                      = "linux/cloud-init/artifacts/coredns-kustomization.yaml"
+	corednsClusterIP                          = "linux/cloud-init/artifacts/coredns-cluster-ip.yaml"
+	corednsTolerations                        = "linux/cloud-init/artifacts/coredns-tolerations.yaml"
 	kubernetesKubeletMonitorSystemdService    = "linux/cloud-init/artifacts/kubelet-monitor.service"
 	kubernetesDockerMonitorSystemdTimer       = "linux/cloud-init/artifacts/docker-monitor.timer"
 	kubernetesDockerMonitorSystemdService     = "linux/cloud-init/artifacts/docker-monitor.service"

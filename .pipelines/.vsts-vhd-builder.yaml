@@ -121,7 +121,6 @@ phases:
           -e OS_DISK_SAS=${OS_DISK_SAS} \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
         displayName: Copying resource to Classic Storage Account
-        condition: and(succeeded(), eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
       - bash: |
           echo MODE=$(MODE) && \
           PKR_RG_NAME="$(cat packer-output | grep "ResourceGroupName" | cut -d "'" -f 2 | head -1)" && \

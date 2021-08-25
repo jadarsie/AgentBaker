@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azure-ip-masq-agent-config
+  namespace: kube-system
+  labels:
+    component: azure-ip-masq-agent
+    kubernetes.io/cluster-service: "true"
+data:
+  ip-masq-agent: |-
+    nonMasqueradeCIDRs:
+      - {{PodCIDR}}{{if IsAzureCNI}}
+      - 168.63.129.16/32{{end}}
+    masqLinkLocal: {{IsAzureCNI}}
+    resyncInterval: 60s
+#EOF

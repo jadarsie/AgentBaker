@@ -33,7 +33,7 @@ function Test-FilesToCacheOnVHD
 
         foreach ($URL in $map[$fakeDir]) {
             $fileName = [IO.Path]::GetFileName($URL)
-            $dest = [IO.Path]::Combine($dir, $fileName)
+            $dest = [IO.Path]::Combine($dir, $fileName.Replace("-azs", ""))
 
             # Do not validate containerd package on docker VHD
             if ($containerRuntime -ne 'containerd' -And $dir -eq "c:\akse-cache\containerd\") {

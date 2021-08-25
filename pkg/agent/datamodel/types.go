@@ -413,9 +413,9 @@ type LinuxProfile struct {
 	SSH           struct {
 		PublicKeys []PublicKey `json:"publicKeys"`
 	} `json:"ssh"`
-	Secrets               []KeyVaultSecrets   `json:"secrets,omitempty"`
-	Distro                Distro              `json:"distro,omitempty"`
-	CustomSearchDomain    *CustomSearchDomain `json:"customSearchDomain,omitempty"`
+	Secrets            []KeyVaultSecrets   `json:"secrets,omitempty"`
+	Distro             Distro              `json:"distro,omitempty"`
+	CustomSearchDomain *CustomSearchDomain `json:"customSearchDomain,omitempty"`
 }
 
 // Extension represents an extension definition in the master or agentPoolProfile
@@ -657,7 +657,14 @@ type ContainerService struct {
 // IsAKSCustomCloud checks if it's in AKS custom cloud
 func (cs *ContainerService) IsAKSCustomCloud() bool {
 	return cs.Properties.CustomCloudEnv != nil &&
-		strings.EqualFold(cs.Properties.CustomCloudEnv.Name, "akscustom")
+		(strings.EqualFold(cs.Properties.CustomCloudEnv.Name, "akscustom") ||
+			strings.EqualFold(cs.Properties.CustomCloudEnv.Name, AzureStackCloud))
+}
+
+// IsAzureStackCloud checks if it's in Azure Stack cloud
+func (cs *ContainerService) IsAzureStackCloud() bool {
+	return cs.Properties.CustomCloudEnv != nil &&
+		strings.EqualFold(cs.Properties.CustomCloudEnv.Name, AzureStackCloud)
 }
 
 // GetLocations returns all supported regions.
@@ -706,7 +713,14 @@ func (p *Properties) HasWindows() bool {
 // IsAKSCustomCloud checks if it's in AKS custom cloud
 func (p *Properties) IsAKSCustomCloud() bool {
 	return p.CustomCloudEnv != nil &&
-		strings.EqualFold(p.CustomCloudEnv.Name, "akscustom")
+		(strings.EqualFold(p.CustomCloudEnv.Name, "akscustom") ||
+			strings.EqualFold(p.CustomCloudEnv.Name, AzureStackCloud))
+}
+
+// IsAzureStackCloud checks if it's in Azure Stack cloud
+func (p *Properties) IsAzureStackCloud() bool {
+	return p.CustomCloudEnv != nil &&
+		strings.EqualFold(p.CustomCloudEnv.Name, AzureStackCloud)
 }
 
 // IsIPMasqAgentEnabled returns true if the cluster has a hosted master and IpMasqAgent is disabled
@@ -934,9 +948,13 @@ func (a *AgentPoolProfile) IsAvailabilitySets() bool {
 }
 
 // GetKubernetesLabels returns a k8s API-compliant labels string for nodes in this profile
-func (a *AgentPoolProfile) GetKubernetesLabels(rg string, deprecated bool, nvidiaEnabled bool, fipsEnabled bool, osSku string) string {
+func (a *AgentPoolProfile) GetKubernetesLabels(rg string, deprecated bool, nvidiaEnabled bool, fipsEnabled bool, osSku string, controlPlane bool) string {
 	var buf bytes.Buffer
-	buf.WriteString("kubernetes.azure.com/role=agent")
+	if controlPlane {
+		buf.WriteString("kubernetes.azure.com/role=master")
+	} else {
+		buf.WriteString("kubernetes.azure.com/role=agent")
+	}
 	if deprecated {
 		buf.WriteString(",node-role.kubernetes.io/agent=")
 		buf.WriteString(",kubernetes.io/role=agent")
@@ -1217,6 +1235,12 @@ func (config *NodeBootstrappingConfiguration) GetOrderedKubeletConfigStringForPo
 	return strings.TrimSuffix(buf.String(), ", ")
 }
 
+// NeedsTLSBoostraping returns true if flag --bootstrap-kubeconfig is passed to kubelet
+func (config *NodeBootstrappingConfiguration) NeedsTLSBoostraping() bool {
+	_, ok := config.KubeletConfig["--bootstrap-kubeconfig"]
+	return ok
+}
+
 // IsEnabled returns true if the addon is enabled
 func (a *KubernetesAddon) IsEnabled() bool {
 	if a.Enabled == nil {
@@ -1297,6 +1321,8 @@ type NodeBootstrappingConfiguration struct {
 	GPUInstanceProfile             string
 	PrimaryScaleSetName            string
 	SIGConfig                      SIGConfig
+	BootstrapToken                 string
+	EtcdVersion                    string
 }
 
 // NodeBootstrapping represents the custom data, CSE, and OS image info needed for node bootstrapping.

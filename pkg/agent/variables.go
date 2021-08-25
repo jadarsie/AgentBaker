@@ -37,6 +37,11 @@ func getCustomDataVariables(config *datamodel.NodeBootstrappingConfiguration) pa
 			"bindMountSystemdService":        getBase64EncodedGzippedCustomScript(bindMountSystemdService, config),
 			"migPartitionSystemdService":     getBase64EncodedGzippedCustomScript(migPartitionSystemdService, config),
 			"migPartitionScript":             getBase64EncodedGzippedCustomScript(migPartitionScript, config),
+			"kubeadmconfig":                  getBase64EncodedGzippedCustomScript(kubeadmConfig, config),
+			"ipMasqAgentConfigmap":           getBase64EncodedGzippedCustomScript(ipMasqAgentConfigmap, config),
+			"corednskustomization":           getBase64EncodedGzippedCustomScript(corednsKustomization, config),
+			"corednsclusterip":               getBase64EncodedGzippedCustomScript(corednsClusterIP, config),
+			"corednstolerations":             getBase64EncodedGzippedCustomScript(corednsTolerations, config),
 		},
 	}
 

@@ -11,6 +11,7 @@ After=bind-mount.service
 
 [Service]
 Restart=always
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
 EnvironmentFile=/etc/default/kubelet
 {{- if ShouldConfigureHTTPProxy}}
 EnvironmentFile=/etc/environment
@@ -26,6 +27,7 @@ ExecStartPre=-/sbin/ebtables -t nat --list
 ExecStartPre=-/sbin/iptables -t nat --numeric --list
 
 ExecStart=/usr/local/bin/kubelet \
+        $KUBELET_KUBEADM_ARGS \
         --enable-server \
         --node-labels="${KUBELET_NODE_LABELS}" \
         --v=2 {{if NeedsContainerd}}--container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock{{end}} \

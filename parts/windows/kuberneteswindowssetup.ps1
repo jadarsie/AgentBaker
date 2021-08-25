@@ -91,6 +91,22 @@ $global:ContainerRuntime = "{{GetParameter "containerRuntime"}}"
 $global:DefaultContainerdWindowsSandboxIsolation = "{{GetParameter "defaultContainerdWindowsSandboxIsolation"}}"
 $global:ContainerdWindowsRuntimeHandlers = "{{GetParameter "containerdWindowsRuntimeHandlers"}}"
 
+# To support newer Windows OS version, we need to support set ContainerRuntime,
+# ContainerdWindowsRuntimeHandlers and DefaultContainerdWindowsSandboxIsolation per agent pool but
+# current code does not support this. Below is a workaround to set contianer
+# runtime variables per Windows OS version.
+#
+# Set default values for container runtime variables for AKS Windows 2004
+if ($([System.Environment]::OSVersion.Version).Build -eq "19041") {
+    $global:ContainerRuntime = "containerd"
+    $global:ContainerdWindowsRuntimeHandlers = "17763,19041"
+    $global:DefaultContainerdWindowsSandboxIsolation = "process"
+}
+
+{{if IsAKSCustomCloud}}
+$global:ContainerRuntime = "docker"
+{{end}}
+
 ## VM configuration passed by Azure
 $global:WindowsTelemetryGUID = "{{GetParameter "windowsTelemetryGUID"}}"
 {{if eq GetIdentitySystem "adfs"}}
@@ -445,6 +461,7 @@ try
             -KubeClusterCIDR $global:KubeClusterCIDR `
             -KubeServiceCIDR $global:KubeServiceCIDR `
             -VNetCIDR $global:VNetCIDR `
+            -IsAzureStack {{if IsAKSCustomCloud}}$true{{else}}$false{{end}} `
             -IsDualStackEnabled $global:IsDualStackEnabled
 
         if ($TargetEnvironment -ieq "AzureStackCloud") {
@@ -456,8 +473,7 @@ try
                 -KubeDir $global:KubeDir `
                 -AADClientSecret $([System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($AADClientSecret))) `
                 -NetworkAPIVersion $NetworkAPIVersion `
-                -AzureEnvironmentFilePath $([io.path]::Combine($global:KubeDir, "azurestackcloud.json")) `
-                -IdentitySystem "{{ GetIdentitySystem }}"
+                -AzureEnvironmentFilePath $([io.path]::Combine($global:KubeDir, "azurestackcloud.json"))
         }
 
         New-ExternalHnsNetwork -IsDualStackEnabled $global:IsDualStackEnabled
@@ -501,7 +517,7 @@ try
             Install-GmsaPlugin -GmsaPackageUrl $global:WindowsGmsaPackageUrl
         }
 
-        Check-APIServerConnectivity -MasterIP $MasterIP
+        Check-APIServerConnectivity -MasterIP $MasterIP -RetryInterval 10 -ConnectTimeout 3 -MaxRetryCount 360
 
         if ($global:WindowsCalicoPackageURL) {
             Write-Log "Start calico installation"

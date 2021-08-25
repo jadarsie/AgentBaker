@@ -61,13 +61,17 @@ ERR_CRICTL_DOWNLOAD_TIMEOUT=117 {{/* Timeout waiting for crictl downloads */}}
 ERR_CRICTL_OPERATION_ERROR=118 {{/* Error executing a crictl operation */}}
 ERR_CTR_OPERATION_ERROR=119 {{/* Error executing a ctr containerd cli operation */}}
 
+{{/* Azure Stack Hub specific errors */}}
+ERR_ASH_KUBEADM_INIT_JOIN=13
+ERR_ASH_GET_ARM_TOKEN=120 {{/* Error generating a token to use with Azure Resource Manager */}}
+ERR_ASH_GET_NETWORK_CONFIGURATION=121 {{/* Error fetching the network configuration for the node */}}
+ERR_ASH_GET_SUBNET_PREFIX=122 {{/* Error fetching the subnet address prefix for a subnet ID */}}
+ERR_ASH_KUBEADM_GEN_FILES=123
+ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST=140
+ERR_ASH_APPLY_ADDON=133
+
 ERR_VHD_FILE_NOT_FOUND=124 {{/* VHD log file not found on VM built from VHD distro */}}
 ERR_VHD_BUILD_ERROR=125 {{/* Reserved for VHD CI exit conditions */}}
-
-{{/* Azure Stack specific errors */}}
-ERR_AZURE_STACK_GET_ARM_TOKEN=120 {{/* Error generating a token to use with Azure Resource Manager */}}
-ERR_AZURE_STACK_GET_NETWORK_CONFIGURATION=121 {{/* Error fetching the network configuration for the node */}}
-ERR_AZURE_STACK_GET_SUBNET_PREFIX=122 {{/* Error fetching the subnet address prefix for a subnet ID */}}
 
 ERR_SWAP_CREAT_FAIL=130 {{/* Error allocating swap file */}}
 ERR_SWAP_CREAT_INSUFFICIENT_DISK_SPACE=131 {{/* Error insufficient disk space for swap file creation */}}
@@ -128,7 +132,7 @@ retrycmd_get_tarball() {
         if [ $i -eq $tar_retries ]; then
             return 1
         else
-            timeout 60 curl -fsSL $url -o $tarball
+            timeout 600 curl -fsSL $url -o $tarball
             sleep $wait_sleep
         fi
     done

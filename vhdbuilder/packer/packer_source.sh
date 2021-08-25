@@ -55,6 +55,20 @@ copyPackerFiles() {
   NVIDIA_DOCKER_DAEMON_DEST=/etc/systemd/system/nvidia-docker-daemon.json
   NVIDIA_DEVICE_PLUGIN_SERVICE_SRC=/home/packer/nvidia-device-plugin.service
   NVIDIA_DEVICE_PLUGIN_SERVICE_DEST=/etc/systemd/system/nvidia-device-plugin.service
+  AUDIT_POLICY_SRC=/home/packer/audit-policy.yaml
+  AUDIT_POLICY_DEST=/etc/kubernetes/audit/audit-policy.yaml
+  AZUREDISK_CSI_DRIVER_SRC=/home/packer/azuredisk-csi-driver.yaml
+  AZUREDISK_CSI_DRIVER_DST=/etc/kubernetes/addons/azuredisk-csi-driver.yaml
+  COREDNS_CONFIGMAP_SRC=/home/packer/coredns-custom-configmap.yaml
+  COREDNS_CONFIGMAP_DST=/etc/kubernetes/addons/coredns-custom-configmap.yaml
+  IP_MASQ_AGENT_SRC=/home/packer/ip-masq-agent.yaml
+  IP_MASQ_AGENT_DST=/etc/kubernetes/addons/ip-masq-agent.yaml
+  KUBE_METRICS_SERVER_SRC=/home/packer/kube-metrics-server.yaml
+  KUBE_METRICS_SERVER_DST=/etc/kubernetes/addons/kube-metrics-server.yaml
+  KUBE_STATE_METRICS_SRC=/home/packer/kube-state-metrics.yaml
+  KUBE_STATE_METRICS_DST=/etc/kubernetes/addons/kube-state-metrics.yaml
+  AZURE_NETWORK_POLICY_SRC=/home/packer/azure-network-policy.yaml
+  AZURE_NETWORK_POLICY_DST=/etc/kubernetes/addons/azure-network-policy.yaml
   NOTICE_SRC=/home/packer/NOTICE.txt
   NOTICE_DEST=/NOTICE.txt
   if [[ ${UBUNTU_RELEASE} == "16.04" ]]; then
@@ -96,6 +110,13 @@ copyPackerFiles() {
     fi
   fi
 
+  cpAndMode $AUDIT_POLICY_SRC $AUDIT_POLICY_DEST 600
+  cpAndMode $AZUREDISK_CSI_DRIVER_SRC $AZUREDISK_CSI_DRIVER_DST 600
+  cpAndMode $COREDNS_CONFIGMAP_SRC $COREDNS_CONFIGMAP_DST 600
+  cpAndMode $IP_MASQ_AGENT_SRC $IP_MASQ_AGENT_DST 600
+  cpAndMode $KUBE_METRICS_SERVER_SRC $KUBE_METRICS_SERVER_DST 600
+  cpAndMode $KUBE_STATE_METRICS_SRC $KUBE_STATE_METRICS_DST 600
+  cpAndMode $AZURE_NETWORK_POLICY_SRC $AZURE_NETWORK_POLICY_DST 600
   cpAndMode $NOTICE_SRC $NOTICE_DEST 444
 }
 

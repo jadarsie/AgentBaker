@@ -117,7 +117,7 @@ docker login -u $SERVICE_PRINCIPAL_CLIENT_ID -p $SERVICE_PRINCIPAL_CLIENT_SECRET
 set -x
 {{end}}
 
-installKubeletKubectlAndKubeProxy
+installKubeletKubectlKubeadmAndKubeProxy
 
 ensureRPC
 
@@ -137,6 +137,7 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 configureK8s
 
 configureCNI
+customizeCNI
 
 {{/* configure and enable dhcpv6 for dual stack feature */}}
 {{- if IsIPv6DualStackFeatureEnabled}}
@@ -145,7 +146,8 @@ ensureDHCPv6
 
 {{- if NeedsContainerd}}
 ensureContainerd {{/* containerd should not be configured until cni has been configured first */}}
-{{- else}}
+{{- end}}
+{{- if NeedsDocker}}
 ensureDocker
 {{- end}}
 
@@ -165,6 +167,9 @@ configureSwapFile
 
 ensureSysctl
 ensureKubelet
+{{- if IsControlPlane}}
+customizeK8s
+{{end}}
 ensureJournal
 {{- if NeedsContainerd}} {{- if and IsKubenet (not HasCalicoNetworkPolicy)}}
 ensureNoDupOnPromiscuBridge
@@ -187,15 +192,12 @@ fi
 
 VALIDATION_ERR=0
 
-{{- /* Edge case scenarios: */}}
-{{- /* high retry times to wait for new API server DNS record to replicate (e.g. stop and start cluster) */}}
-{{- /* high timeout to address high latency for private dns server to forward request to Azure DNS */}}
-API_SERVER_DNS_RETRIES=100
+API_SERVER_DNS_RETRIES=360
 if [[ $API_SERVER_NAME == *.privatelink.* ]]; then
   API_SERVER_DNS_RETRIES=200
 fi
 {{- if not EnableHostsConfigAgent}}
-RES=$(retrycmd_if_failure ${API_SERVER_DNS_RETRIES} 1 10 nslookup ${API_SERVER_NAME})
+RES=$(retrycmd_if_failure ${API_SERVER_DNS_RETRIES} 10 3 nslookup ${API_SERVER_NAME})
 STS=$?
 {{- else}}
 STS=0
@@ -208,11 +210,11 @@ if [[ $STS != 0 ]]; then
         VALIDATION_ERR=$ERR_K8S_API_SERVER_DNS_LOOKUP_FAIL
     fi
 else
-    API_SERVER_CONN_RETRIES=50
+    API_SERVER_CONN_RETRIES=360
     if [[ $API_SERVER_NAME == *.privatelink.* ]]; then
         API_SERVER_CONN_RETRIES=100
     fi
-    retrycmd_if_failure ${API_SERVER_CONN_RETRIES} 1 10 nc -vz ${API_SERVER_NAME} 443 || time nc -vz ${API_SERVER_NAME} 443 || VALIDATION_ERR=$ERR_K8S_API_SERVER_CONN_FAIL
+    retrycmd_if_failure ${API_SERVER_CONN_RETRIES} 10 3 nc -vz ${API_SERVER_NAME} 443 || time nc -vz ${API_SERVER_NAME} 443 || VALIDATION_ERR=$ERR_K8S_API_SERVER_CONN_FAIL
 fi
 
 # If it is a MIG Node, enable mig-partition systemd service to create MIG instances

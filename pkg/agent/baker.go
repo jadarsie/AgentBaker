@@ -288,6 +288,99 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 	cs := config.ContainerService
 	profile := config.AgentPoolProfile
 	return template.FuncMap{
+		// TODO ASH DELETE
+		"IsControlPlane": func() bool {
+			return config.BootstrapToken != ""
+		},
+		"NeedsTLSBoostraping": func() bool {
+			return config.NeedsTLSBoostraping()
+		},
+		// TODO ASH DELETE
+		"ServiceCidr": func() string {
+			return config.ContainerService.Properties.OrchestratorProfile.KubernetesConfig.ServiceCIDR
+		},
+		// TODO ASH DELETE
+		"KubernetesVersion": func() string {
+			return config.ContainerService.Properties.OrchestratorProfile.OrchestratorVersion
+		},
+		// TODO ASH DELETE
+		"EtcdVersion": func() string {
+			return config.EtcdVersion
+		},
+		// TODO ASH DELETE
+		"ResourceGroupName": func() string {
+			return config.ResourceGroupName
+		},
+		// TODO ASH DELETE
+		"PodCIDR": func() string {
+			return config.ContainerService.Properties.OrchestratorProfile.KubernetesConfig.ClusterSubnet
+		},
+		// TODO ASH DELETE
+		"DNSServiceIP": func() string {
+			return config.ContainerService.Properties.OrchestratorProfile.KubernetesConfig.DNSServiceIP
+		},
+		// TODO ASH DELETE
+		"NetworkPluging": func() string {
+			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin == NetworkPluginKubenet {
+				return "kubenet"
+			}
+			return "cni"
+		},
+		// TODO ASH DELETE
+		"MaxPods": func() int {
+			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin == NetworkPluginKubenet {
+				return 110
+			}
+			return 30
+		},
+		// TODO ASH DELETE
+		"NonMasqueradeCIDR": func() string {
+			if cs.Properties.IsIPMasqAgentEnabled() {
+				return "0.0.0.0/0"
+			}
+			return config.ContainerService.Properties.OrchestratorProfile.KubernetesConfig.ClusterSubnet
+		},
+		// TODO ASH configurable
+		"CGroupDriver": func() string {
+			// kubeadm recommends the systemd cgroup driver
+			if config.BootstrapToken != "" {
+				return "systemd"
+			}
+			return "cgroupfs"
+		},
+		// TODO ASH DELETE
+		"GetAddonsURI": func() string {
+			addons := []string{
+				"/etc/kubernetes/addons/azuredisk-csi-driver.yaml",
+				"/etc/kubernetes/addons/coredns-custom-configmap.yaml",
+				"/etc/kubernetes/addons/ip-masq-agent.yaml",
+				"/etc/kubernetes/addons/ip-masq-agent-configmap.yaml",
+				"/etc/kubernetes/addons/kube-metrics-server.yaml",
+				"/etc/kubernetes/addons/kube-state-metrics.yaml",
+			}
+			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure {
+				addons = append(addons, "/etc/kubernetes/addons/azure-network-policy.yaml")
+			}
+			return strings.Join(addons, " ")
+		},
+		// TODO ASH DELETE
+		"BootstrapToken": func() string {
+			return config.BootstrapToken
+		},
+		// TODO ASH DELETE
+		"CACertificateHash": func() string {
+			// TODO ASH handle error
+			caCert := config.ContainerService.Properties.CertificateProfile.CaCertificate
+			hash, err := certificateHash(caCert)
+			if err != nil {
+				panic(err)
+			}
+			return hash
+		},
+		// TODO ASH take overrides as parameter
+		"GetCPKubernetesLabels": func() string {
+			return "kubernetes.azure.com/role=master"
+		},
 		"Disable1804SystemdResolved": func() bool {
 			return config.Disable1804SystemdResolved
 		},
@@ -299,11 +392,11 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		},
 		"GetAgentKubernetesLabels": func(profile *datamodel.AgentPoolProfile) string {
 			return profile.GetKubernetesLabels(normalizeResourceGroupNameForLabel(config.ResourceGroupName),
-				false, config.EnableNvidia, config.FIPSEnabled, config.OSSKU)
+				false, config.EnableNvidia, config.FIPSEnabled, config.OSSKU, config.BootstrapToken != "")
 		},
 		"GetAgentKubernetesLabelsDeprecated": func(profile *datamodel.AgentPoolProfile) string {
 			return profile.GetKubernetesLabels(normalizeResourceGroupNameForLabel(config.ResourceGroupName),
-				true, config.EnableNvidia, config.FIPSEnabled, config.OSSKU)
+				true, config.EnableNvidia, config.FIPSEnabled, config.OSSKU, config.BootstrapToken != "")
 		},
 		"GetGPUInstanceProfile": func() string {
 			return config.GPUInstanceProfile
@@ -504,6 +597,12 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		"UseRuncShimV2": func() bool {
 			return config.EnableRuncShimV2
 		},
+		"NeedsDocker": func() bool {
+			if profile != nil && profile.KubernetesConfig != nil && profile.KubernetesConfig.ContainerRuntime != "" {
+				return !profile.KubernetesConfig.NeedsContainerd() || config.BootstrapToken != ""
+			}
+			return !cs.Properties.OrchestratorProfile.KubernetesConfig.NeedsContainerd() || config.BootstrapToken != ""
+		},
 		"IsDockerContainerRuntime": func() bool {
 			if profile != nil && profile.KubernetesConfig != nil && profile.KubernetesConfig.ContainerRuntime != "" {
 				return profile.KubernetesConfig.ContainerRuntime == datamodel.Docker
@@ -563,6 +662,9 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		},
 		"IsAKSCustomCloud": func() bool {
 			return cs.IsAKSCustomCloud()
+		},
+		"IsAzureStackCloud": func() bool {
+			return cs.IsAzureStackCloud()
 		},
 		"GetInitAKSCustomCloudFilepath": func() string {
 			return initAKSCustomCloudFilepath

@@ -90,6 +90,11 @@ fi
 downloadKrustlet
 echo "  - krustlet ${KRUSTLET_VERSION}" >> ${VHD_LOGS_FILEPATH}
 
+MOBY_VERSION="19.03.14"
+installMoby
+echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
+cliTool="docker"
+
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime"
   containerd_version="1.4.8"
@@ -115,14 +120,7 @@ if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   cliTool="ctr"
 
   # also pre-download Teleportd plugin for containerd
-  downloadTeleportdPlugin ${TELEPORTD_PLUGIN_DOWNLOAD_URL} "0.8.0"
-else
-  CONTAINER_RUNTIME="docker"
-  MOBY_VERSION="19.03.14"
-  installMoby
-  echo "VHD will be built with docker as container runtime"
-  echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
-  cliTool="docker"
+  # downloadTeleportdPlugin ${TELEPORTD_PLUGIN_DOWNLOAD_URL} "0.6.0"
 fi
 
 INSTALLED_RUNC_VERSION=$(runc --version | head -n1 | sed 's/runc version //')
@@ -185,9 +183,10 @@ for imageToBePulled in ${ContainerImages[*]}; do
 done
 
 VNET_CNI_VERSIONS="
-1.4.7
+1.2.0_hotfix
+1.2.0
+1.1.8
 1.4.0
-1.2.7
 "
 for VNET_CNI_VERSION in $VNET_CNI_VERSIONS; do
     VNET_CNI_PLUGINS_URL="https://acs-mirror.azureedge.net/azure-cni/v${VNET_CNI_VERSION}/binaries/azure-vnet-cni-linux-amd64-v${VNET_CNI_VERSION}.tgz"
@@ -377,11 +376,13 @@ KUBE_BINARY_VERSIONS="
 1.19.6-hotfix.20210118
 1.19.7-hotfix.20210310
 1.19.9-hotfix.20210505
+1.19.10
 1.19.11
 1.19.12
 1.19.13
 1.20.2-hotfix.20210310
 1.20.5-hotfix.20210505
+1.20.6
 1.20.7
 1.20.8
 1.20.9
@@ -394,7 +395,7 @@ for PATCHED_KUBE_BINARY_VERSION in ${KUBE_BINARY_VERSIONS}; do
     continue
   fi
   KUBERNETES_VERSION=$(echo ${PATCHED_KUBE_BINARY_VERSION} | cut -d"_" -f1 | cut -d"-" -f1 | cut -d"." -f1,2,3)
-  extractKubeBinaries $KUBERNETES_VERSION "https://acs-mirror.azureedge.net/kubernetes/v${PATCHED_KUBE_BINARY_VERSION}/binaries/kubernetes-node-linux-amd64.tar.gz"
+  extractKubeBinaries $KUBERNETES_VERSION "https://acs-mirror.azureedge.net/kubernetes/v${PATCHED_KUBE_BINARY_VERSION}-azs/binaries/kubernetes-node-linux-amd64.tar.gz"
 done
 
 # shellcheck disable=SC2129

@@ -272,6 +272,41 @@
     },
     {
       "type": "file",
+      "source": "vhdbuilder/static/audit-policy.yaml",
+      "destination": "/home/packer/audit-policy.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/azuredisk-csi-driver.yaml",
+      "destination": "/home/packer/azuredisk-csi-driver.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/coredns-custom-configmap.yaml",
+      "destination": "/home/packer/coredns-custom-configmap.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/ip-masq-agent.yaml",
+      "destination": "/home/packer/ip-masq-agent.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/kube-metrics-server.yaml",
+      "destination": "/home/packer/kube-metrics-server.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/kube-state-metrics.yaml",
+      "destination": "/home/packer/kube-state-metrics.yaml"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/azure-network-policy.yaml",
+      "destination": "/home/packer/azure-network-policy.yaml"
+    },
+    {
+      "type": "file",
       "source": "vhdbuilder/notice.txt",
       "destination": "/home/packer/NOTICE.txt"
     },

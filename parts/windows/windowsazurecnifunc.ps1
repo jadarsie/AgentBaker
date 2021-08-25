@@ -41,6 +41,8 @@ Set-AzureCNIConfig
         [Parameter(Mandatory=$true)][string]
         $VNetCIDR,
         [Parameter(Mandatory=$true)][bool]
+        $IsAzureStack,
+        [Parameter(Mandatory=$true)][bool]
         $IsDualStackEnabled
     )
     # Fill in DNS information for kubernetes.
@@ -93,6 +95,10 @@ Set-AzureCNIConfig
     }
     else {
         $configJson.plugins[0].AdditionalArgs[1].Value.DestinationPrefix = $KubeServiceCIDR
+    }
+
+    if ($IsAzureStack) {
+        Add-Member -InputObject $configJson.plugins[0].ipam -MemberType NoteProperty -Name "environment" -Value "mas"
     }
 
     $aclRule1 = [PSCustomObject]@{
@@ -195,13 +201,13 @@ function GenerateAzureStackCNIConfig
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string] $ResourceGroup,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string] $NetworkAPIVersion,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string] $AzureEnvironmentFilePath,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string] $IdentitySystem,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string] $KubeDir
 
     )
 
     $networkInterfacesFile = "$KubeDir\network-interfaces.json"
     $azureCNIConfigFile = "$KubeDir\interfaces.json"
+    $azureConfig = "$KubeDir\azure.json"
     $azureEnvironment = Get-Content $AzureEnvironmentFilePath | ConvertFrom-Json
 
     Write-Log "------------------------------------------------------------------------"
@@ -225,12 +231,8 @@ function GenerateAzureStackCNIConfig
 
     Write-Log "Generating token for Azure Resource Manager"
 
-    $tokenURL = ""
-    if($IdentitySystem -ieq "adfs") {
-        $tokenURL = "$($azureEnvironment.activeDirectoryEndpoint)adfs/oauth2/token"
-    } else {
-        $tokenURL = "$($azureEnvironment.activeDirectoryEndpoint)$TenantId/oauth2/token"
-    }
+    $TenantId = (Get-Content $azureConfig | ConvertFrom-Json).tenantId
+    $tokenURL = "$($azureEnvironment.activeDirectoryEndpoint)$TenantId/oauth2/token"
 
     Add-Type -AssemblyName System.Web
     $encodedSecret = [System.Web.HttpUtility]::UrlEncode($AADClientSecret)

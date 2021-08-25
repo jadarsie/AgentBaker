@@ -126,7 +126,6 @@ write_files:
     {{GetVariableProperty "cloudInitData" "migPartitionScript"}}  
 {{end}}
 
-{{- if not .IsVHDDistro}}
 - path: /etc/systemd/system/update-node-labels.service
   permissions: "0644"
   encoding: gzip
@@ -140,7 +139,6 @@ write_files:
   owner: root
   content: !!binary |
     {{GetVariableProperty "cloudInitData" "updateNodeLabelsScript"}}  
-{{end}}
 
 {{- if HasKubeletDiskType}}
 - path: /opt/azure/containers/bind-mount.sh
@@ -187,7 +185,9 @@ write_files:
   owner: root
   content: !!binary |
     {{GetVariableProperty "cloudInitData" "containerdMonitorSystemdService"}}
-{{- else}}
+{{- end}}
+
+{{- if NeedsDocker}}
 - path: /etc/systemd/system/docker-monitor.timer
   permissions: "0644"
   encoding: gzip
@@ -202,6 +202,7 @@ write_files:
   content: !!binary |
     {{GetVariableProperty "cloudInitData" "dockerMonitorSystemdService"}}
 {{- end}}
+
 - path: /etc/systemd/system/kms.service
   permissions: "0644"
   encoding: gzip
@@ -283,7 +284,7 @@ write_files:
     {{GetVariableProperty "cloudInitData" "dhcpv6ConfigurationScript"}}
 {{end}}
 
-{{if RequiresDocker}}
+{{if NeedsDocker}}
     {{if not .IsVHDDistro}}
 - path: /etc/systemd/system/docker.service.d/clear_mount_propagation_flags.conf
   permissions: "0644"
@@ -308,6 +309,9 @@ write_files:
   owner: root
   content: |
     {
+      "exec-opts": [
+        "native.cgroupdriver={{CGroupDriver}}"
+      ],
       "live-restore": true,
       "log-driver": "json-file",
       "log-opts":  {
@@ -409,6 +413,12 @@ write_files:
           {{- else}}
           runtime_engine = "/usr/bin/runc"
           {{- end}}
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+          {{- if IsControlPlane}}
+          SystemdCgroup = true
+          {{- else}}
+          SystemdCgroup = false
+          {{- end}}
       {{ if and (IsKubenet) (not HasCalicoNetworkPolicy) }}
       [plugins."io.containerd.grpc.v1.cri".cni]
         bin_dir = "/opt/cni/bin"
@@ -417,8 +427,6 @@ write_files:
       {{ end}}
       [plugins."io.containerd.grpc.v1.cri".registry.headers]
         X-Meta-Source-Client = ["azure/aks"]
-    [metrics]
-      address = "0.0.0.0:10257"
     {{ if TeleportEnabled }}
     [proxy_plugins]
       [proxy_plugins.teleportd]
@@ -459,6 +467,43 @@ write_files:
             "externalSetMarkChain": "KUBE-MARK-MASQ"
           }]
       }
+
+{{ if IsKubenet }}
+- path: /etc/cni/net.d/10-containerd-net.conflist
+  permissions: "0644"
+  owner: root
+  content: |
+      {
+        "cniVersion": "0.3.1",
+        "name": "kubenet",
+        "plugins": [
+          {
+            "type": "bridge",
+            "bridge": "cbr0",
+            "mtu": 1500,
+            "addIf": "eth0",
+            "isGateway": true,
+            {{- if IsIPMasqAgentEnabled}}
+            "ipMasq": false,
+            {{- else}}
+            "ipMasq": true,
+            {{- end}}
+            "promiscMode": true,
+            "hairpinMode": false,
+            "ipam": {
+              "type": "host-local",
+              "subnet": "{{PodCIDR}}",
+              "routes": [{ "dst": "0.0.0.0/0" }]
+            }
+          },
+          {
+            "type": "portmap",
+            "capabilities": { "portMappings": true },
+            "externalSetMarkChain": "KUBE-MARK-MASQ"
+          }
+        ]
+      }
+{{ end}}
 
 - path: /etc/systemd/system/containerd.service
   permissions: "0644"
@@ -788,6 +833,79 @@ write_files:
 {{- end}}
 {{- end}}
     #EOF
+
+{{if IsControlPlane}}
+- path: /etc/kubernetes/kubeadm-config.yaml
+  permissions: "0600"
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "kubeadmconfig"}}
+
+- path: /etc/kubernetes/pki/ca.key
+  permissions: "0600"
+  encoding: base64
+  owner: root
+  content: |
+    {{GetParameter "caPrivateKey"}}
+
+- path: /etc/kubernetes/pki/sa.key
+  permissions: "0600"
+  encoding: base64
+  owner: root
+  content: |
+    {{GetParameter "apiServerPrivateKey"}}
+
+- path: /etc/kubernetes/addons/ip-masq-agent-configmap.yaml
+  permissions: "0600"
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "ipMasqAgentConfigmap"}}
+
+- path: /etc/kubernetes/kustomize/coredns/kustomization.yaml
+  permissions: "0600"
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "corednskustomization"}}
+
+- path: /etc/kubernetes/kustomize/coredns/cluster-ip.yaml
+  permissions: "0600"
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "corednsclusterip"}}
+
+- path: /etc/kubernetes/kustomize/coredns/tolerations.yaml
+  permissions: "0600"
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "corednstolerations"}}
+
+disk_setup:
+  /dev/disk/azure/scsi1/lun0:
+    table_type: gpt
+    layout: true
+    overwrite: false
+
+fs_setup:
+- label: etcd_disk
+  filesystem: ext4
+  device: /dev/disk/azure/scsi1/lun0
+  extra_opts:
+  - -E
+  - lazy_itable_init=1,lazy_journal_init=1
+- label: ephemeral0
+  filesystem: ext4
+  device: ephemeral0.1
+  replace_fs: ntfs
+
+mounts:
+- - LABEL=etcd_disk
+  - /var/lib/etcddisk
+{{end}}
 
 runcmd:
 - set -x
