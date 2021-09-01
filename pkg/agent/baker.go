@@ -411,7 +411,7 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 			return IsKubeletConfigFileEnabled(cs, profile, config.EnableKubeletConfigFile)
 		},
 		"IsKubeletClientTLSBootstrappingEnabled": func() bool {
-			return IsKubeletClientTLSBootstrappingEnabled(config.KubeletClientTLSBootstrapToken)
+			return !cs.IsAzureStackCloud() && IsKubeletClientTLSBootstrappingEnabled(config.KubeletClientTLSBootstrapToken)
 		},
 		"GetTLSBootstrapTokenForKubeConfig": func() string {
 			return GetTLSBootstrapTokenForKubeConfig(config.KubeletClientTLSBootstrapToken)

@@ -171,6 +171,7 @@ ensureKubelet
 customizeK8s
 {{end}}
 ensureJournal
+ensureUpdateNodeLabels
 {{- if NeedsContainerd}} {{- if and IsKubenet (not HasCalicoNetworkPolicy)}}
 ensureNoDupOnPromiscuBridge
 {{- end}} {{- end}}
