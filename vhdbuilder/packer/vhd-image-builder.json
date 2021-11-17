@@ -302,6 +302,11 @@
     },
     {
       "type": "file",
+      "source": "vhdbuilder/static/pod-security-policy.yaml",
+      "destination": "/home/packer/pod-security-policy.yaml"
+    },
+    {
+      "type": "file",
       "source": "vhdbuilder/static/azure-network-policy.yaml",
       "destination": "/home/packer/azure-network-policy.yaml"
     },
