@@ -2910,7 +2910,7 @@ controlPlaneEndpoint: {{GetKubernetesEndpoint}}
 apiServer:
   extraArgs:
     cloud-config: /etc/kubernetes/azure.json
-    cloud-provider: azure
+    cloud-provider: {{CloudProvider}}
     audit-log-path: /var/log/kubeaudit/audit.log
     audit-policy-file: /etc/kubernetes/audit/audit-policy.yaml
     audit-log-maxage: "30"
@@ -2938,7 +2938,7 @@ controllerManager:
     allocate-node-cidrs: "{{IsKubenet}}"
     configure-cloud-routes: "{{IsKubenet}}"
     cloud-config: /etc/kubernetes/azure.json
-    cloud-provider: azure
+    cloud-provider: {{CloudProvider}}
     cluster-name: {{ResourceGroupName}}
   extraVolumes:
   - hostPath: /etc/kubernetes/azure.json
@@ -2972,7 +2972,7 @@ nodeRegistration:
     value: "true"
   kubeletExtraArgs:
     cloud-config: /etc/kubernetes/azure.json
-    cloud-provider: azure
+    cloud-provider: {{CloudProvider}}
     node-labels: {{GetCPKubernetesLabels}}
     network-plugin: {{NetworkPluging}}
     non-masquerade-cidr: {{NonMasqueradeCIDR}}
@@ -2991,7 +2991,7 @@ nodeRegistration:
     value: "true"
   kubeletExtraArgs:
     cloud-config: /etc/kubernetes/azure.json
-    cloud-provider: azure
+    cloud-provider: {{CloudProvider}}
     node-labels: {{GetCPKubernetesLabels}}
     network-plugin: {{NetworkPluging}}
     non-masquerade-cidr: {{NonMasqueradeCIDR}}
@@ -6589,6 +6589,34 @@ try
         Register-LogsCleanupScriptTask
         Register-NodeResetScriptTask
         Update-DefenderPreferences
+
+        {{if IsAzureStackCloud}}
+            {{if UseExternalCloudProvider}}
+            # Export the Azure Stack root cert for use in cloud node manager container setup.
+            $azsConfigFile = [io.path]::Combine($global:KubeDir, "azurestackcloud.json")
+            if (Test-Path -Path $azsConfigFile) {
+                $azsJson = Get-Content -Raw -Path $azsConfigFile | ConvertFrom-Json
+                if (-not [string]::IsNullOrEmpty($azsJson.managementPortalURL)) {
+                    $azsARMUri = [System.Uri]$azsJson.managementPortalURL
+                    $azsRootCert = Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object {$_.DnsNameList.Unicode -contains $azsARMUri.Host.Substring($azsARMUri.Host.IndexOf(".")).TrimStart(".")}
+                    if ($null -ne $azsRootCert) {
+                        $azsRootCertFilePath =  [io.path]::Combine($global:KubeDir, "azsroot.cer")
+                        Export-Certificate -Cert $azsRootCert -FilePath $azsRootCertFilePath -Type CERT
+                    }
+                }
+            }
+
+            # Copy certoc tool for use in cloud node manager container setup. [Environment]::SystemDirectory
+            $certocSourcePath = [io.path]::Combine([Environment]::SystemDirectory, "certoc.exe")
+            if (Test-Path -Path $certocSourcePath) {
+                Copy-Item -Path $certocSourcePath -Destination $global:KubeDir
+            }
+
+            # Create add cert script
+            $addRootCertFile = [io.path]::Combine($global:KubeDir, "addazsroot.bat")
+            [io.file]::WriteAllText($addRootCertFile, "${global:KubeDir}\certoc.exe -addstore root ${azsRootCertFilePath}")
+            {{end}}
+        {{end}}
 
         if ($windowsSecureTlsEnabled) {
             Write-Host "Enable secure TLS protocols"

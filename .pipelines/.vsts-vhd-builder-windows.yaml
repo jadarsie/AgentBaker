@@ -22,7 +22,6 @@ phases:
   - phase: build_vhd_2019
     condition: eq('${{ parameters.build2019 }}', true)
     queue:
-      name: Hosted Ubuntu 1604
       timeoutInMinutes: 180
     steps:
       - bash: |
@@ -39,7 +38,6 @@ phases:
   - phase: build_vhd_2019_containerd
     condition: eq('${{ parameters.build2019containerd }}', true)
     queue:
-      name: Hosted Ubuntu 1604
       timeoutInMinutes: 180
     steps:
       - bash: |

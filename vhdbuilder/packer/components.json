@@ -284,6 +284,20 @@
       ]
     },
     {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:*",
+      "versions": [
+        "v1.1.1",
+        "v1.1.2"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:*",
+      "versions": [
+        "v1.1.1",
+        "v1.1.2"
+      ]
+    },
+    {
       "downloadURL": "mcr.microsoft.com/oss/open-policy-agent/gatekeeper:*",
       "versions": [
         "v3.4.1",
@@ -371,28 +385,34 @@
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-apiserver:*",
       "versions": [
-        "v1.19.10-azs",
         "v1.19.11-azs",
-        "v1.20.6-azs",
-        "v1.20.7-azs"
+        "v1.20.7-azs",
+        "v1.21.1",
+        "v1.21.2",
+        "v1.22.1",
+        "v1.22.2"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-controller-manager:*",
       "versions": [
-        "v1.19.10-azs",
         "v1.19.11-azs",
-        "v1.20.6-azs",
-        "v1.20.7-azs"
+        "v1.20.7-azs",
+        "v1.21.1",
+        "v1.21.2",
+        "v1.22.1",
+        "v1.22.2"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-scheduler:*",
       "versions": [
-        "v1.19.10-azs",
         "v1.19.11-azs",
-        "v1.20.6-azs",
-        "v1.20.7-azs"
+        "v1.20.7-azs",
+        "v1.21.1",
+        "v1.21.2",
+        "v1.22.1",
+        "v1.22.2"
       ]
     },
     {

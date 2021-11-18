@@ -327,6 +327,20 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 			return "cni"
 		},
 		// TODO ASH DELETE
+		"CloudProvider": func() string {
+			if IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0") {
+				return "external"
+			}
+			return "azure"
+		},
+		// TODO ASH DELETE
+		"ClusterName": func() string {
+			return cs.Properties.HostedMasterProfile.DNSPrefix
+		},
+		"UseExternalCloudProvider": func() bool {
+			return IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0")
+		},
+		// TODO ASH DELETE
 		"MaxPods": func() int {
 			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin == NetworkPluginKubenet {
 				return 110
@@ -360,6 +374,10 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 			}
 			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure {
 				addons = append(addons, "/etc/kubernetes/addons/azure-network-policy.yaml")
+			}
+			if IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0") {
+				addons = append(addons, "/etc/kubernetes/manifests/cloud-controller-manager.yaml")
+				addons = append(addons, "/etc/kubernetes/addons/cloud-node-manager.yaml")
 			}
 			return strings.Join(addons, " ")
 		},

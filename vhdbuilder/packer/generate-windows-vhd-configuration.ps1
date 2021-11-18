@@ -45,6 +45,8 @@ switch ($windowsSKU) {
             "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.6.0", # for k8s 1.19.x
             "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.7.5", # for k8s 1.20.x
             "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.0.2", # for k8s 1.21.x
+            "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.1", # for k8s 1.21.x
+            "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.2", # for k8s 1.22.x
             "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021",
             "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021-2")
     }
@@ -61,6 +63,8 @@ switch ($windowsSKU) {
             "mcr.microsoft.com/oss/azure/secrets-store/provider-azure:0.0.14",
             "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.7.5", # for k8s 1.20.x
             "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.0.2", # for k8s 1.21.x
+            "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.1", # for k8s 1.21.x
+            "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.2", # for k8s 1.22.x
             "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021-2")
     }
     default {
@@ -113,10 +117,12 @@ $global:map = @{
     #    2. Keep 1.18.10, 1.18.14, 1.18.17, 1.18.18
     #    3. Keep v1.18.17-hotfix.20210322 when adding v1.18.17-hotfix.20210505
     "c:\akse-cache\win-k8s\"      = @(
-        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.19.10-azs/windowszip/v1.19.10-azs-1int.zip",
         "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.19.11-azs/windowszip/v1.19.11-azs-1int.zip",
-        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.20.6-azs/windowszip/v1.20.6-azs-1int.zip",
-        "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.20.7-azs/windowszip/v1.20.7-azs-1int.zip"
+        "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.20.7-azs/windowszip/v1.20.7-azs-1int.zip",
+        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.21.1/windowszip/v1.21.1-1int.zip",
+        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.21.2/windowszip/v1.21.2-1int.zip",
+        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.22.1/windowszip/v1.22.1-1int.zip",
+        "https://kubernetesartifacts.azureedge.net/kubernetes/v1.22.2/windowszip/v1.22.2-1int.zip"
     );
     "c:\akse-cache\win-vnet-cni\" = @(
         "https://acs-mirror.azureedge.net/azure-cni/v1.2.7/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.2.7.zip",
