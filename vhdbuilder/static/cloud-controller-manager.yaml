@@ -20,12 +20,12 @@ spec:
         value: INFO
       command: ["cloud-controller-manager"]
       args:
-        - "--allocate-node-cidrs={{ not IsAzureCNI }}"
+        - "--allocate-node-cidrs={{not IsAzureCNI}}"
         - "--cloud-config=/etc/kubernetes/azure.json"
         - "--cloud-provider=azure"
-        - "--cluster-cidr={{ PodCIDR }}"
-        - "--cluster-name={{ ClusterName }}"
-        - "--configure-cloud-routes={{ not IsAzureCNI }}"
+        - "--cluster-cidr={{PodCIDR}}"
+        - "--cluster-name={{ClusterName}}"
+        - "--configure-cloud-routes={{not IsAzureCNI}}"
         - "--controllers=*,-cloud-node"
         - "--kubeconfig=/etc/kubernetes/admin.conf"
         - "--leader-elect=true"

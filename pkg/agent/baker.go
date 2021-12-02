@@ -301,7 +301,10 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		},
 		// TODO ASH DELETE
 		"KubernetesVersion": func() string {
-			return config.ContainerService.Properties.OrchestratorProfile.OrchestratorVersion
+			if IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0") {
+				return fmt.Sprintf("v%s", config.ContainerService.Properties.OrchestratorProfile.OrchestratorVersion)
+			}
+			return fmt.Sprintf("v%s-azs", config.ContainerService.Properties.OrchestratorProfile.OrchestratorVersion)
 		},
 		// TODO ASH DELETE
 		"EtcdVersion": func() string {
@@ -337,6 +340,7 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		"ClusterName": func() string {
 			return cs.Properties.HostedMasterProfile.DNSPrefix
 		},
+		// TODO ASH DELETE
 		"UseExternalCloudProvider": func() bool {
 			return IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0")
 		},

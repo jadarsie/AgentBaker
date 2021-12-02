@@ -2905,7 +2905,7 @@ etcd:
 networking:
   podSubnet: {{PodCIDR}}
   serviceSubnet: {{ServiceCidr}}
-kubernetesVersion: v{{KubernetesVersion}}-azs
+kubernetesVersion: {{KubernetesVersion}}
 controlPlaneEndpoint: {{GetKubernetesEndpoint}}
 apiServer:
   extraArgs:
