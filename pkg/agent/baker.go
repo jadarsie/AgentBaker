@@ -467,6 +467,9 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 			}
 			return cs.Properties.HostedMasterProfile.FQDN
 		},
+		"InternalLoadBalancerIP": func() string {
+			return "192.168.255.15"
+		},
 		"IsAzureCNI": func() bool {
 			return cs.Properties.OrchestratorProfile.IsAzureCNI()
 		},

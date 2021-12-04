@@ -39,9 +39,8 @@ func getCustomDataVariables(config *datamodel.NodeBootstrappingConfiguration) pa
 			"migPartitionScript":             getBase64EncodedGzippedCustomScript(migPartitionScript, config),
 			"kubeadmconfig":                  getBase64EncodedGzippedCustomScript(kubeadmConfig, config),
 			"ipMasqAgentConfigmap":           getBase64EncodedGzippedCustomScript(ipMasqAgentConfigmap, config),
-			"corednskustomization":           getBase64EncodedGzippedCustomScript(corednsKustomization, config),
-			"corednsclusterip":               getBase64EncodedGzippedCustomScript(corednsClusterIP, config),
-			"corednstolerations":             getBase64EncodedGzippedCustomScript(corednsTolerations, config),
+			"corednsAddonManifest":           getBase64EncodedGzippedCustomScript(corednsAddonManifest, config),
+			"kubeproxyAddonManifest":         getBase64EncodedGzippedCustomScript(kubeproxyAddonManifest, config),
 		},
 	}
 
@@ -82,7 +81,7 @@ func getWindowsCustomDataVariables(config *datamodel.NodeBootstrappingConfigurat
 		"virtualNetworkName":                   cs.Properties.GetVirtualNetworkName(),
 		"routeTableName":                       cs.Properties.GetRouteTableName(),
 		"primaryAvailabilitySetName":           cs.Properties.GetPrimaryAvailabilitySetName(),
-		"primaryScaleSetName":                  config.PrimaryScaleSetName,
+		"primaryScaleSetName":                  cs.Properties.GetPrimaryScaleSetName(),
 		"useManagedIdentityExtension":          useManagedIdentity(cs),
 		"useInstanceMetadata":                  useInstanceMetadata(cs),
 		"loadBalancerSku":                      cs.Properties.OrchestratorProfile.KubernetesConfig.LoadBalancerSku,
