@@ -11,7 +11,7 @@ spec:
   hostNetwork: true
   containers:
     - name: cloud-controller-manager
-      image: "oss/kubernetes/azure-cloud-controller-manager:v1.1.2"
+      image: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.2"
       imagePullPolicy: IfNotPresent
       env:
       - name: AZURE_ENVIRONMENT_FILEPATH
