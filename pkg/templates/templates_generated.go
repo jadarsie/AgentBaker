@@ -6,9 +6,7 @@
 // linux/cloud-init/artifacts/cis.sh
 // linux/cloud-init/artifacts/containerd-monitor.service
 // linux/cloud-init/artifacts/containerd-monitor.timer
-// linux/cloud-init/artifacts/coredns-cluster-ip.yaml
-// linux/cloud-init/artifacts/coredns-kustomization.yaml
-// linux/cloud-init/artifacts/coredns-tolerations.yaml
+// linux/cloud-init/artifacts/coredns.yaml
 // linux/cloud-init/artifacts/cse_cmd.sh
 // linux/cloud-init/artifacts/cse_config.sh
 // linux/cloud-init/artifacts/cse_helpers.sh
@@ -28,6 +26,7 @@
 // linux/cloud-init/artifacts/init-aks-custom-cloud.sh
 // linux/cloud-init/artifacts/ip-masq-agent-configmap.yaml
 // linux/cloud-init/artifacts/kms.service
+// linux/cloud-init/artifacts/kube-proxy.yaml
 // linux/cloud-init/artifacts/kubeadm-config.yaml
 // linux/cloud-init/artifacts/kubelet-monitor.service
 // linux/cloud-init/artifacts/kubelet-monitor.timer
@@ -372,87 +371,214 @@ func linuxCloudInitArtifactsContainerdMonitorTimer() (*asset, error) {
 	return a, nil
 }
 
-var _linuxCloudInitArtifactsCorednsClusterIpYaml = []byte(`apiVersion: v1
-kind: Service
+var _linuxCloudInitArtifactsCorednsYaml = []byte(`---
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: kube-dns
+  labels:
+    k8s-app: kube-dns
+  name: coredns
   namespace: kube-system
 spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: kube-dns
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-dns
+    spec:
+      containers:
+      - args:
+        - -conf
+        - /etc/coredns/Corefile
+        image: mcr.microsoft.com/oss/kubernetes/coredns:1.7.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: coredns
+        ports:
+        - containerPort: 53
+          name: dns
+          protocol: UDP
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+        - containerPort: 9153
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8181
+            scheme: HTTP
+        resources:
+          limits:
+            memory: 170Mi
+          requests:
+            cpu: 100m
+            memory: 70Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /etc/coredns
+          name: config-volume
+          readOnly: true
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-cluster-critical
+      serviceAccountName: coredns
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: Corefile
+            path: Corefile
+          name: coredns
+        name: config-volume
+---
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+            ttl 30
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf {
+            max_concurrent 1000
+        }
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: coredns
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/port: "9153"
+    prometheus.io/scrape: "true"
+  labels:
+    k8s-app: kube-dns
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: KubeDNS
+  name: kube-dns
+  namespace: kube-system
+  resourceVersion: "0"
+spec:
   clusterIP: {{DNSServiceIP}}
+  ports:
+  - name: dns
+    port: 53
+    protocol: UDP
+    targetPort: 53
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+    targetPort: 53
+  - name: metrics
+    port: 9153
+    protocol: TCP
+    targetPort: 9153
+  selector:
+    k8s-app: kube-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:coredns
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - services
+  - pods
+  - namespaces
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:coredns
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:coredns
+subjects:
+- kind: ServiceAccount
+  name: coredns
+  namespace: kube-system
 #EOF
 `)
 
-func linuxCloudInitArtifactsCorednsClusterIpYamlBytes() ([]byte, error) {
-	return _linuxCloudInitArtifactsCorednsClusterIpYaml, nil
+func linuxCloudInitArtifactsCorednsYamlBytes() ([]byte, error) {
+	return _linuxCloudInitArtifactsCorednsYaml, nil
 }
 
-func linuxCloudInitArtifactsCorednsClusterIpYaml() (*asset, error) {
-	bytes, err := linuxCloudInitArtifactsCorednsClusterIpYamlBytes()
+func linuxCloudInitArtifactsCorednsYaml() (*asset, error) {
+	bytes, err := linuxCloudInitArtifactsCorednsYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/coredns-cluster-ip.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _linuxCloudInitArtifactsCorednsKustomizationYaml = []byte(`---
-resources:
-- deployment.yaml
-- service.yaml
-patchesStrategicMerge:
-- cluster-ip.yaml
-patchesJson6902:
-- path: tolerations.yaml
-  target:
-    group: apps
-    version: v1
-    kind: Deployment
-    name: coredns
-    namespace: kube-system
-#EOF
-`)
-
-func linuxCloudInitArtifactsCorednsKustomizationYamlBytes() ([]byte, error) {
-	return _linuxCloudInitArtifactsCorednsKustomizationYaml, nil
-}
-
-func linuxCloudInitArtifactsCorednsKustomizationYaml() (*asset, error) {
-	bytes, err := linuxCloudInitArtifactsCorednsKustomizationYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/coredns-kustomization.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _linuxCloudInitArtifactsCorednsTolerationsYaml = []byte(`- op: add
-  path: "/spec/template/spec/tolerations/-"
-  value:
-    operator: "Exists"
-    effect: NoSchedule
-- op: add
-  path: "/spec/template/spec/tolerations/-"
-  value:
-    operator: "Exists"
-    effect: NoExecute
-#EOF
-`)
-
-func linuxCloudInitArtifactsCorednsTolerationsYamlBytes() ([]byte, error) {
-	return _linuxCloudInitArtifactsCorednsTolerationsYaml, nil
-}
-
-func linuxCloudInitArtifactsCorednsTolerationsYaml() (*asset, error) {
-	bytes, err := linuxCloudInitArtifactsCorednsTolerationsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/coredns-tolerations.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/coredns.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -522,6 +648,7 @@ NETWORK_MODE={{GetParameter "networkMode"}}
 KUBE_BINARY_URL={{GetParameter "kubeBinaryURL"}}
 USER_ASSIGNED_IDENTITY_ID={{GetVariable "userAssignedIdentityID"}}
 API_SERVER_NAME={{GetKubernetesEndpoint}}
+INTERNAL_LB_IP={{InternalLoadBalancerIP}}
 IS_VHD={{GetVariable "isVHD"}}
 GPU_NODE={{GetVariable "gpuNode"}}
 SGX_NODE={{GetVariable "sgxNode"}}
@@ -598,11 +725,9 @@ RefreshEtcdManifest() {
 
 customizeK8s() {
     wait_for_file 1200 1 /etc/kubernetes/kubeadm-config.yaml || exit $ERR_FILE_WATCH_TIMEOUT
-    wait_for_file 1200 1 /etc/kubernetes/kustomize/coredns/cluster-ip.yaml || exit $ERR_FILE_WATCH_TIMEOUT
-    wait_for_file 1200 1 /etc/kubernetes/kustomize/coredns/kustomization.yaml || exit $ERR_FILE_WATCH_TIMEOUT
-    wait_for_file 1200 1 /etc/kubernetes/kustomize/coredns/tolerations.yaml || exit $ERR_FILE_WATCH_TIMEOUT
-    # wait_for_file 1200 1 /etc/kubernetes/addons/...
-    
+    wait_for_file 1200 1 /etc/kubernetes/addons/kube-proxy.yaml || exit $ERR_FILE_WATCH_TIMEOUT
+    wait_for_file 1200 1 /etc/kubernetes/addons/coredns.yaml || exit $ERR_FILE_WATCH_TIMEOUT
+
     mkdir -p /etc/kubernetes/pki/etcd
     cp -p /etc/kubernetes/certs/ca.crt /etc/kubernetes/pki/ca.crt
     cp -p /etc/kubernetes/pki/sa.key /etc/kubernetes/pki/sa.pub
@@ -611,8 +736,13 @@ customizeK8s() {
     cp -p /etc/kubernetes/pki/ca.crt /etc/kubernetes/pki/etcd/ca.crt
     cp -p /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/etcd/ca.key
 
+    kubeletserver_key="/etc/kubernetes/certs/kubeletserver.key"
+    kubeletserver_crt="/etc/kubernetes/certs/kubeletserver.crt"
+    openssl genrsa -out $kubeletserver_key 2048
+    openssl req -new -x509 -days 7300 -key $kubeletserver_key -out $kubeletserver_crt -subj "/CN=$(hostname)"
+
     mkdir -p /etc/kubernetes/patches
-    KubeControllerManagerPath
+    KubeControllerManagerPatch
 
     FIRST_MASTER_NODE=true
     echo $NODE_NAME | grep -E '*-0$' > /dev/null
@@ -624,43 +754,75 @@ customizeK8s() {
     fi  
 
     if [ "${FIRST_MASTER_NODE}" = true ]; then
+        local ADDON_CONFIG=$(mktemp)
+        OLD="controlPlaneEndpoint: ${API_SERVER_NAME}"
+        NEW="controlPlaneEndpoint: ${INTERNAL_LB_IP}"
+        sed "s/${OLD}/${NEW}/1" ${CONFIG} > ${ADDON_CONFIG}
+
         retrycmd_if_failure_no_stats 10 15 180 kubeadm init phase certs all --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
         retrycmd_if_failure_no_stats 10 15 180 kubeadm init phase kubeconfig all --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
         retrycmd_if_failure_no_stats 10 15 180 kubeadm init phase control-plane all --config ${CONFIG} --experimental-patches /etc/kubernetes/patches -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
-        retrycmd_if_failure_no_stats 10 15 300 kubeadm init --config ${CONFIG} --skip-phases=control-plane,certs,kubeconfig --ignore-preflight-errors=all -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
+        retrycmd_if_failure_no_stats 10 15 300 kubeadm init --config ${CONFIG} --skip-phases=certs,kubeconfig,control-plane,addon --ignore-preflight-errors=all -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+        # TODO Remove line below once /etc/kubernetes/addons/psp.yaml is baked
+        PodSecurityPolicies
+        retrycmd_if_failure_no_stats 10 15 10 kubectl apply -f /etc/kubernetes/addons/psp.yaml --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
 
         retrycmd_if_failure_no_stats 10 15 180 kubectl create clusterrolebinding nodegroup --clusterrole system:node --group system:nodes --kubeconfig ${KUBECONFIG}
         retrycmd_if_failure_no_stats 10 15 180 kubectl create clusterrolebinding node-kubeproxy --clusterrole system:node-proxier --group system:nodes --kubeconfig ${KUBECONFIG}
 
-        retrycmd_if_failure_no_stats 10 15 180 kubectl get deploy coredns -n kube-system --kubeconfig ${KUBECONFIG} -o yaml > /etc/kubernetes/kustomize/coredns/deployment.yaml || exit $ERR_ASH_APPLY_ADDON
-        retrycmd_if_failure_no_stats 10 15 180 kubectl delete deploy coredns -n kube-system --wait=true --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
-        retrycmd_if_failure_no_stats 10 15 180 kubectl get service kube-dns -n kube-system --kubeconfig ${KUBECONFIG} -o yaml > /etc/kubernetes/kustomize/coredns/service.yaml || exit $ERR_ASH_APPLY_ADDON
-        retrycmd_if_failure_no_stats 10 15 180 kubectl delete service kube-dns -n kube-system --wait=true --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
-        retrycmd_if_failure_no_stats 10 15 180 kubectl kustomize /etc/kubernetes/kustomize/coredns | kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_APPLY_ADDON
-
+        retrycmd_if_failure_no_stats 10 15 10 kubectl apply -f /etc/kubernetes/addons/kube-proxy.yaml --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
+        retrycmd_if_failure_no_stats 10 15 10 kubectl apply -f /etc/kubernetes/addons/coredns.yaml --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
+    
         for ADDON in {{GetAddonsURI}}; do
-            retrycmd_if_failure 10 15 180 kubectl apply -f ${ADDON} --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
+            retrycmd_if_failure_no_stats 10 15 180 kubectl apply -f ${ADDON} --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
         done
     else
-        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare all --config ${CONFIG} --experimental-patches /etc/kubernetes/patches -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
-        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase kubelet-start --config ${CONFIG} -v 9 || exit $ERR_KUBELET_START_FAIL
-        if [[ -d /var/lib/etcddisk/etcd/member/ ]]; then
-            retrycmd_if_failure_no_stats 10 15 300 kubeadm join phase control-plane-join all --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
-            retrycmd_if_failure_no_stats 10 15 180 kubectl uncordon ${NODE_NAME} --kubeconfig ${KUBECONFIG}
-        else
-            retrycmd_if_failure_no_stats 10 15 300 kubeadm join --config ${CONFIG} --skip-phases=control-plane-prepare,kubelet-start --ignore-preflight-errors=all -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
+        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare certs --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
+        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare kubeconfig --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
+
+        retrycmd_if_failure_no_stats 10 15 180 kubectl get cm kubeadm-config -n kube-system -o yaml --kubeconfig ${KUBECONFIG} > /tmp/kubeadm-config.yaml || exit $ERR_ASH_KUBEADM_GEN_FILES
+        sed "s/v1.[0-9]*.[0-9]*-azs$/v{{KubernetesVersion}}-azs/1" /tmp/kubeadm-config.yaml > /tmp/kubeadm-upgrade.yaml
+        cmp -s /tmp/kubeadm-config.yaml /tmp/kubeadm-upgrade.yaml
+        UPGRADE=$?
+
+        if [ $UPGRADE == 1 ] ; then
+            CUR_MINOR=$(grep -oh "v1.[0-9]*.[0-9]*-azs$" /tmp/kubeadm-config.yaml | grep -oh "\.[0-9][0-9]\." | grep -o [0-9][0-9])
+            NEW_MINOR=$(echo {{KubernetesVersion}} | grep -oh "\.[0-9][0-9]\." | grep -o [0-9][0-9])
+
+            echo "upgrading control plane node to kubernetes v{{KubernetesVersion}}"
+            kubectl create role kubeadm:kubelet-config-1.${NEW_MINOR} -n kube-system --verb=get --resource=configmaps --resource-name=kubelet-config-1.${NEW_MINOR} --dry-run=client -o yaml \
+            | retrycmd_if_failure_no_stats 10 15 30 kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_KUBEADM_INIT_JOIN
+            
+            kubectl create rolebinding kubeadm:kubelet-config-1.${NEW_MINOR} -n kube-system --role=kubeadm:kubelet-config-1.${NEW_MINOR} --group=system:nodes --group=system:bootstrappers:kubeadm:default-node-token --dry-run=client -o yaml \
+            | retrycmd_if_failure_no_stats 10 15 30 kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            kubectl create clusterrole kubeadm:get-nodes --verb=get --resource=nodes --dry-run=client -o yaml \
+            | retrycmd_if_failure_no_stats 10 15 30 kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            kubectl create clusterrolebinding kubeadm:get-nodes --clusterrole=kubeadm:get-nodes --group=system:bootstrappers:kubeadm:default-node-token --dry-run=client -o yaml \
+            | retrycmd_if_failure_no_stats 10 15 30 kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            retrycmd_if_failure_no_stats 10 15 30 kubectl get cm kubelet-config-1.${CUR_MINOR} -n kube-system -o yaml --kubeconfig ${KUBECONFIG} > kubelet-config.yaml || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            sed "/resourceVersion/d" kubelet-config.yaml | sed "s/kubelet-config-1.${CUR_MINOR}/kubelet-config-1.${NEW_MINOR}/1" \
+            | retrycmd_if_failure_no_stats 10 15 30 kubectl apply --kubeconfig ${KUBECONFIG} -f - || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            retrycmd_if_failure_no_stats 10 15 30 kubectl replace -n kube-system cm kubeadm-conf -f /tmp/kubeadm-upgrade.yaml --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_KUBEADM_INIT_JOIN
+
+            retrycmd_if_failure_no_stats 10 15 30 kubectl apply -f /etc/kubernetes/addons/coredns.yaml --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
         fi
+
+        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare control-plane --config ${CONFIG} --experimental-patches /etc/kubernetes/patches -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
+        retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase kubelet-start --config ${CONFIG} -v 9 || exit $ERR_KUBELET_START_FAIL
+        retrycmd_if_failure_no_stats 10 15 300 kubeadm join phase control-plane-join all --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
+        retrycmd_if_failure_no_stats 10 15 180 kubectl uncordon ${NODE_NAME} --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_KUBEADM_INIT_JOIN
     fi
 
     RefreshEtcdManifest || exit $ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST
-
-    # /etc/kubernetes/admin.conf is used by update-node-labels.service
-    # /etc/kubernetes/kubelet.conf does not have enought permissions
-    # we have to keep admin.conf until node labels are set by the rp, not agentbaker
-    #rm -rf /etc/kubernetes/admin.conf
 }
 
-KubeControllerManagerPath() {
+KubeControllerManagerPatch() {
     cat << EOF > /etc/kubernetes/patches/kube-controller-manager+strategic.yaml
 spec:
   containers:
@@ -669,6 +831,149 @@ spec:
     - name: AZURE_ENVIRONMENT_FILEPATH
       value: /etc/kubernetes/azurestackcloud.json
 EOF
+}
+
+# TODO Remove function once /etc/kubernetes/addons/psp.yaml is baked
+PodSecurityPolicies() {
+    if [ ! -f /etc/kubernetes/addons/psp.yaml ]; then
+    cat << EOF > /etc/kubernetes/addons/psp.yaml
+# source: https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/policy/privileged-psp.yaml
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: privileged
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+spec:
+  privileged: true
+  allowPrivilegeEscalation: true
+  allowedCapabilities:
+  - '*'
+  volumes:
+  - '*'
+  hostNetwork: true
+  hostPorts:
+  - min: 0
+    max: 65535
+  hostIPC: true
+  hostPID: true
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+---
+# source: https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/policy/restricted-psp.yaml
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default,runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+spec:
+  privileged: false
+  # Required to prevent escalations to root.
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  # Allow core volume types.
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    # Assume that ephemeral CSI drivers & persistentVolumes set up by the cluster admin are safe to use.
+    - 'csi'
+    - 'persistentVolumeClaim'
+    - 'ephemeral'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    # Require the container to run without root privileges.
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    # This policy assumes the nodes are using AppArmor rather than SELinux.
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 65535
+  readOnlyRootFilesystem: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: psp:privileged
+rules:
+- apiGroups: ['extensions']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - privileged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: psp:restricted
+rules:
+- apiGroups: ['extensions']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - restricted
+---
+# authenticated users use psp:privileged cluster wide
+# cluster admin should replace this cluster role binding to tight access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: authenticated:privileged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp:privileged
+subjects:
+- kind: Group
+  name: system:authenticated
+  apiGroup: rbac.authorization.k8s.io
+---
+# cluster-admins and kube-system service accounts use psp:privileged
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: control-plane:privileged
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp:privileged
+subjects:
+- kind: Group
+  name: system:masters
+  apiGroup: rbac.authorization.k8s.io
+- kind: Group
+  name: system:serviceaccounts:kube-system
+  apiGroup: rbac.authorization.k8s.io
+- kind: Group
+  name: system:nodes
+  apiGroup: rbac.authorization.k8s.io
+EOF
+    fi
 }
 
 {{- if EnableHostsConfigAgent}}
@@ -2890,6 +3195,208 @@ func linuxCloudInitArtifactsKmsService() (*asset, error) {
 	return a, nil
 }
 
+var _linuxCloudInitArtifactsKubeProxyYaml = []byte(`---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+---
+apiVersion: v1
+data:
+  config.conf: |-
+    apiVersion: kubeproxy.config.k8s.io/v1alpha1
+    bindAddress: 0.0.0.0
+    bindAddressHardFail: false
+    clientConnection:
+      acceptContentTypes: ""
+      burst: 0
+      contentType: ""
+      kubeconfig: /var/lib/kube-proxy/kubeconfig.conf
+      qps: 0
+    clusterCIDR: {{PodCIDR}}
+    configSyncPeriod: 0s
+    conntrack:
+      maxPerCore: null
+      min: null
+      tcpCloseWaitTimeout: null
+      tcpEstablishedTimeout: null
+    detectLocalMode: ""
+    enableProfiling: false
+    healthzBindAddress: ""
+    hostnameOverride: ""
+    iptables:
+      masqueradeAll: false
+      masqueradeBit: null
+      minSyncPeriod: 0s
+      syncPeriod: 0s
+    ipvs:
+      excludeCIDRs: null
+      minSyncPeriod: 0s
+      scheduler: ""
+      strictARP: false
+      syncPeriod: 0s
+      tcpFinTimeout: 0s
+      tcpTimeout: 0s
+      udpTimeout: 0s
+    kind: KubeProxyConfiguration
+    metricsBindAddress: ""
+    mode: ""
+    nodePortAddresses: null
+    oomScoreAdj: null
+    portRange: ""
+    showHiddenMetricsForVersion: ""
+    udpIdleTimeout: 0s
+    winkernel:
+      enableDSR: false
+      networkName: ""
+      sourceVip: ""
+  kubeconfig.conf: |-
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        server: https://{{GetKubernetesEndpoint}}:443
+      name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: default
+        user: default
+      name: default
+    current-context: default
+    users:
+    - name: default
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+kind: ConfigMap
+metadata:
+  labels:
+    app: kube-proxy
+  name: kube-proxy
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: kube-proxy
+  name: kube-proxy
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-proxy
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+    spec:
+      containers:
+      - command:
+        - /usr/local/bin/kube-proxy
+        - --config=/var/lib/kube-proxy/config.conf
+        - --hostname-override=$(NODE_NAME)
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: mcr.microsoft.com/oss/kubernetes/kube-proxy:v{{KubernetesVersion}}-azs
+        imagePullPolicy: IfNotPresent
+        name: kube-proxy
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/lib/kube-proxy
+          name: kube-proxy
+        - mountPath: /run/xtables.lock
+          name: xtables-lock
+        - mountPath: /lib/modules
+          name: lib-modules
+          readOnly: true
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-node-critical
+      serviceAccountName: kube-proxy
+      tolerations:
+      - operator: Exists
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: kube-proxy
+        name: kube-proxy
+      - hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+        name: xtables-lock
+      - hostPath:
+          path: /lib/modules
+          type: ""
+        name: lib-modules
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - kube-proxy
+  resources:
+  - configmaps
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kube-proxy
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:bootstrappers:kubeadm:default-node-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeadm:node-proxier
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:node-proxier
+subjects:
+- kind: ServiceAccount
+  name: kube-proxy
+  namespace: kube-system
+#EOF
+`)
+
+func linuxCloudInitArtifactsKubeProxyYamlBytes() ([]byte, error) {
+	return _linuxCloudInitArtifactsKubeProxyYaml, nil
+}
+
+func linuxCloudInitArtifactsKubeProxyYaml() (*asset, error) {
+	bytes, err := linuxCloudInitArtifactsKubeProxyYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kube-proxy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _linuxCloudInitArtifactsKubeadmConfigYaml = []byte(`---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
@@ -2902,6 +3409,8 @@ etcd:
       election-timeout: "2500"
       heartbeat-interval: "250"
       snapshot-count: "5000"
+      auto-tls: "false"
+      peer-auto-tls: "false"
 networking:
   podSubnet: {{PodCIDR}}
   serviceSubnet: {{ServiceCidr}}
@@ -2916,6 +3425,10 @@ apiServer:
     audit-log-maxage: "30"
     audit-log-maxbackup: "10"
     audit-log-maxsize: "100"
+    enable-admission-plugins: NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodNodeSelector,PodTolerationRestriction,ExtendedResourceToleration,PodSecurityPolicy
+    tls-min-version: VersionTLS12
+    tls-cipher-suites: TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+    request-timeout: 1m0s
   extraVolumes:
   - hostPath: /etc/kubernetes/azure.json
     mountPath: /etc/kubernetes/azure.json
@@ -2932,6 +3445,7 @@ apiServer:
   certSANs:
   - 127.0.0.1
   - localhost
+  - {{InternalLoadBalancerIP}}
   timeoutForControlPlane: 7m0s
 controllerManager:
   extraArgs:
@@ -2940,6 +3454,8 @@ controllerManager:
     cloud-config: /etc/kubernetes/azure.json
     cloud-provider: {{CloudProvider}}
     cluster-name: {{ResourceGroupName}}
+    tls-min-version: VersionTLS12
+    profiling: "false"
   extraVolumes:
   - hostPath: /etc/kubernetes/azure.json
     mountPath: /etc/kubernetes/azure.json
@@ -2949,6 +3465,9 @@ controllerManager:
     mountPath: /etc/kubernetes/{{GetTargetEnvironment}}.json
     name: cloud-config-stack
     readOnly: true
+scheduler:
+  extraArgs:
+    tls-min-version: VersionTLS12
 dns:
   type: CoreDNS
 imageRepository: mcr.microsoft.com/oss/kubernetes
@@ -3013,6 +3532,11 @@ kind: KubeletConfiguration
 clusterDNS:
 - {{DNSServiceIP}}
 maxPods: {{MaxPods}}
+readOnlyPort: 0
+protectKernelDefaults: true
+streamingConnectionIdleTimeout: 4h
+tlsCertFile: "/etc/kubernetes/certs/kubeletserver.crt"
+tlsPrivateKeyFile: "/etc/kubernetes/certs/kubeletserver.key"
 #EOF
 `)
 
@@ -5120,43 +5644,6 @@ write_files:
           }]
       }
 
-{{ if IsKubenet }}
-- path: /etc/cni/net.d/10-containerd-net.conflist
-  permissions: "0644"
-  owner: root
-  content: |
-      {
-        "cniVersion": "0.3.1",
-        "name": "kubenet",
-        "plugins": [
-          {
-            "type": "bridge",
-            "bridge": "cbr0",
-            "mtu": 1500,
-            "addIf": "eth0",
-            "isGateway": true,
-            {{- if IsIPMasqAgentEnabled}}
-            "ipMasq": false,
-            {{- else}}
-            "ipMasq": true,
-            {{- end}}
-            "promiscMode": true,
-            "hairpinMode": false,
-            "ipam": {
-              "type": "host-local",
-              "subnet": "{{PodCIDR}}",
-              "routes": [{ "dst": "0.0.0.0/0" }]
-            }
-          },
-          {
-            "type": "portmap",
-            "capabilities": { "portMappings": true },
-            "externalSetMarkChain": "KUBE-MARK-MASQ"
-          }
-        ]
-      }
-{{ end}}
-
 - path: /etc/systemd/system/containerd.service
   permissions: "0644"
   owner: root
@@ -5319,7 +5806,7 @@ write_files:
     - name: localcluster
       cluster:
         certificate-authority: /etc/kubernetes/certs/ca.crt
-        server: https://{{GetKubernetesEndpoint}}:443
+        server: https://{{InternalLoadBalancerIP}}:443
     users:
     - name: client
       user:
@@ -5359,6 +5846,10 @@ write_files:
   owner: root
   content: |
     #!/bin/bash
+{{if IsControlPlane}}
+    {{- /* Redirect ILB (4443) traffic to port 443 (ELB) in the prerouting chain */}}
+    iptables -t nat -A PREROUTING -p tcp --dport 4443 -j REDIRECT --to-port 443
+{{end}}
 {{if not IsIPMasqAgentEnabled}}
     {{if IsAzureCNI}}
     iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d {{GetParameter "vnetCidr"}} -j MASQUERADE
@@ -5515,26 +6006,19 @@ write_files:
   content: !!binary |
     {{GetVariableProperty "cloudInitData" "ipMasqAgentConfigmap"}}
 
-- path: /etc/kubernetes/kustomize/coredns/kustomization.yaml
+- path: /etc/kubernetes/addons/coredns.yaml
   permissions: "0600"
   encoding: gzip
   owner: root
   content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednskustomization"}}
+    {{GetVariableProperty "cloudInitData" "corednsAddonManifest"}}
 
-- path: /etc/kubernetes/kustomize/coredns/cluster-ip.yaml
+- path: /etc/kubernetes/addons/kube-proxy.yaml
   permissions: "0600"
   encoding: gzip
   owner: root
   content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednsclusterip"}}
-
-- path: /etc/kubernetes/kustomize/coredns/tolerations.yaml
-  permissions: "0600"
-  encoding: gzip
-  owner: root
-  content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednstolerations"}}
+    {{GetVariableProperty "cloudInitData" "kubeproxyAddonManifest"}}
 
 disk_setup:
   /dev/disk/azure/scsi1/lun0:
@@ -5668,7 +6152,7 @@ func windowsContainerdtemplateToml() (*asset, error) {
 
 var _windowsCsecmdPs1 = []byte(`powershell.exe -ExecutionPolicy Unrestricted -command \"
 $arguments = '
--MasterIP {{ GetKubernetesEndpoint }}
+-MasterIP {{ InternalLoadBalancerIP }}
 -KubeDnsServiceIp {{ GetParameter "kubeDNSServiceIP" }}
 -MasterFQDNPrefix {{ GetParameter "masterEndpointDNSNamePrefix" }}
 -Location {{ GetVariable "location" }}
@@ -6474,7 +6958,7 @@ try
         $envJSON = "{{ GetBase64EncodedEnvironmentJSON }}"
         [io.file]::WriteAllBytes($azureStackConfigFile, [System.Convert]::FromBase64String($envJSON))
 
-        Get-CACertificates
+        # Get-CACertificates
         {{end}}
 
         Write-Log "Write ca root"
@@ -8576,9 +9060,7 @@ var _bindata = map[string]func() (*asset, error){
 	"linux/cloud-init/artifacts/cis.sh":                                    linuxCloudInitArtifactsCisSh,
 	"linux/cloud-init/artifacts/containerd-monitor.service":                linuxCloudInitArtifactsContainerdMonitorService,
 	"linux/cloud-init/artifacts/containerd-monitor.timer":                  linuxCloudInitArtifactsContainerdMonitorTimer,
-	"linux/cloud-init/artifacts/coredns-cluster-ip.yaml":                   linuxCloudInitArtifactsCorednsClusterIpYaml,
-	"linux/cloud-init/artifacts/coredns-kustomization.yaml":                linuxCloudInitArtifactsCorednsKustomizationYaml,
-	"linux/cloud-init/artifacts/coredns-tolerations.yaml":                  linuxCloudInitArtifactsCorednsTolerationsYaml,
+	"linux/cloud-init/artifacts/coredns.yaml":                              linuxCloudInitArtifactsCorednsYaml,
 	"linux/cloud-init/artifacts/cse_cmd.sh":                                linuxCloudInitArtifactsCse_cmdSh,
 	"linux/cloud-init/artifacts/cse_config.sh":                             linuxCloudInitArtifactsCse_configSh,
 	"linux/cloud-init/artifacts/cse_helpers.sh":                            linuxCloudInitArtifactsCse_helpersSh,
@@ -8598,6 +9080,7 @@ var _bindata = map[string]func() (*asset, error){
 	"linux/cloud-init/artifacts/init-aks-custom-cloud.sh":                  linuxCloudInitArtifactsInitAksCustomCloudSh,
 	"linux/cloud-init/artifacts/ip-masq-agent-configmap.yaml":              linuxCloudInitArtifactsIpMasqAgentConfigmapYaml,
 	"linux/cloud-init/artifacts/kms.service":                               linuxCloudInitArtifactsKmsService,
+	"linux/cloud-init/artifacts/kube-proxy.yaml":                           linuxCloudInitArtifactsKubeProxyYaml,
 	"linux/cloud-init/artifacts/kubeadm-config.yaml":                       linuxCloudInitArtifactsKubeadmConfigYaml,
 	"linux/cloud-init/artifacts/kubelet-monitor.service":                   linuxCloudInitArtifactsKubeletMonitorService,
 	"linux/cloud-init/artifacts/kubelet-monitor.timer":                     linuxCloudInitArtifactsKubeletMonitorTimer,
@@ -8695,9 +9178,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				"cis.sh":                                    &bintree{linuxCloudInitArtifactsCisSh, map[string]*bintree{}},
 				"containerd-monitor.service":                &bintree{linuxCloudInitArtifactsContainerdMonitorService, map[string]*bintree{}},
 				"containerd-monitor.timer":                  &bintree{linuxCloudInitArtifactsContainerdMonitorTimer, map[string]*bintree{}},
-				"coredns-cluster-ip.yaml":                   &bintree{linuxCloudInitArtifactsCorednsClusterIpYaml, map[string]*bintree{}},
-				"coredns-kustomization.yaml":                &bintree{linuxCloudInitArtifactsCorednsKustomizationYaml, map[string]*bintree{}},
-				"coredns-tolerations.yaml":                  &bintree{linuxCloudInitArtifactsCorednsTolerationsYaml, map[string]*bintree{}},
+				"coredns.yaml":                              &bintree{linuxCloudInitArtifactsCorednsYaml, map[string]*bintree{}},
 				"cse_cmd.sh":                                &bintree{linuxCloudInitArtifactsCse_cmdSh, map[string]*bintree{}},
 				"cse_config.sh":                             &bintree{linuxCloudInitArtifactsCse_configSh, map[string]*bintree{}},
 				"cse_helpers.sh":                            &bintree{linuxCloudInitArtifactsCse_helpersSh, map[string]*bintree{}},
@@ -8717,6 +9198,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				"init-aks-custom-cloud.sh":                  &bintree{linuxCloudInitArtifactsInitAksCustomCloudSh, map[string]*bintree{}},
 				"ip-masq-agent-configmap.yaml":              &bintree{linuxCloudInitArtifactsIpMasqAgentConfigmapYaml, map[string]*bintree{}},
 				"kms.service":                               &bintree{linuxCloudInitArtifactsKmsService, map[string]*bintree{}},
+				"kube-proxy.yaml":                           &bintree{linuxCloudInitArtifactsKubeProxyYaml, map[string]*bintree{}},
 				"kubeadm-config.yaml":                       &bintree{linuxCloudInitArtifactsKubeadmConfigYaml, map[string]*bintree{}},
 				"kubelet-monitor.service":                   &bintree{linuxCloudInitArtifactsKubeletMonitorService, map[string]*bintree{}},
 				"kubelet-monitor.timer":                     &bintree{linuxCloudInitArtifactsKubeletMonitorTimer, map[string]*bintree{}},

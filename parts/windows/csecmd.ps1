@@ -1,6 +1,6 @@
 powershell.exe -ExecutionPolicy Unrestricted -command \"
 $arguments = '
--MasterIP {{ GetKubernetesEndpoint }}
+-MasterIP {{ InternalLoadBalancerIP }}
 -KubeDnsServiceIp {{ GetParameter "kubeDNSServiceIP" }}
 -MasterFQDNPrefix {{ GetParameter "masterEndpointDNSNamePrefix" }}
 -Location {{ GetVariable "location" }}

@@ -384,7 +384,7 @@ try
         $envJSON = "{{ GetBase64EncodedEnvironmentJSON }}"
         [io.file]::WriteAllBytes($azureStackConfigFile, [System.Convert]::FromBase64String($envJSON))
 
-        Get-CACertificates
+        # Get-CACertificates
         {{end}}
 
         Write-Log "Write ca root"

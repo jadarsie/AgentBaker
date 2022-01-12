@@ -901,6 +901,37 @@ func (p *Properties) GetPrimaryAvailabilitySetName() string {
 	return ""
 }
 
+// GetPrimaryScaleSetName returns the name of the primary scale set node of the cluster
+func (p *Properties) GetPrimaryScaleSetName() string {
+	if len(p.AgentPoolProfiles) > 0 {
+		if strings.EqualFold(p.AgentPoolProfiles[0].AvailabilityProfile, VirtualMachineScaleSets) {
+			return p.GetAgentVMPrefix(p.AgentPoolProfiles[0], 0)
+		}
+	}
+	return ""
+}
+
+// GetAgentVMPrefix returns the VM prefix for an agentpool.
+func (p *Properties) GetAgentVMPrefix(a *AgentPoolProfile, index int) string {
+	nameSuffix := p.GetClusterID()
+	vmPrefix := ""
+	if index != -1 {
+		if a.IsWindows() {
+			if strings.EqualFold(a.WindowsNameVersion, "v2") {
+				vmPrefix = p.K8sOrchestratorName() + a.Name
+			} else {
+				vmPrefix = nameSuffix[:4] + p.K8sOrchestratorName() + fmt.Sprintf("%02d", index)
+			}
+		} else {
+			vmPrefix = p.K8sOrchestratorName() + "-" + a.Name + "-" + nameSuffix + "-"
+			if a.IsVirtualMachineScaleSets() {
+				vmPrefix += "vmss"
+			}
+		}
+	}
+	return vmPrefix
+}
+
 // GetKubeProxyFeatureGatesWindowsArguments returns the feature gates string for the kube-proxy arguments in Windows nodes
 func (p *Properties) GetKubeProxyFeatureGatesWindowsArguments() string {
 	featureGates := map[string]bool{}

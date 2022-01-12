@@ -468,43 +468,6 @@ write_files:
           }]
       }
 
-{{ if IsKubenet }}
-- path: /etc/cni/net.d/10-containerd-net.conflist
-  permissions: "0644"
-  owner: root
-  content: |
-      {
-        "cniVersion": "0.3.1",
-        "name": "kubenet",
-        "plugins": [
-          {
-            "type": "bridge",
-            "bridge": "cbr0",
-            "mtu": 1500,
-            "addIf": "eth0",
-            "isGateway": true,
-            {{- if IsIPMasqAgentEnabled}}
-            "ipMasq": false,
-            {{- else}}
-            "ipMasq": true,
-            {{- end}}
-            "promiscMode": true,
-            "hairpinMode": false,
-            "ipam": {
-              "type": "host-local",
-              "subnet": "{{PodCIDR}}",
-              "routes": [{ "dst": "0.0.0.0/0" }]
-            }
-          },
-          {
-            "type": "portmap",
-            "capabilities": { "portMappings": true },
-            "externalSetMarkChain": "KUBE-MARK-MASQ"
-          }
-        ]
-      }
-{{ end}}
-
 - path: /etc/systemd/system/containerd.service
   permissions: "0644"
   owner: root
@@ -667,7 +630,7 @@ write_files:
     - name: localcluster
       cluster:
         certificate-authority: /etc/kubernetes/certs/ca.crt
-        server: https://{{GetKubernetesEndpoint}}:443
+        server: https://{{InternalLoadBalancerIP}}:443
     users:
     - name: client
       user:
@@ -707,6 +670,10 @@ write_files:
   owner: root
   content: |
     #!/bin/bash
+{{if IsControlPlane}}
+    {{- /* Redirect ILB (4443) traffic to port 443 (ELB) in the prerouting chain */}}
+    iptables -t nat -A PREROUTING -p tcp --dport 4443 -j REDIRECT --to-port 443
+{{end}}
 {{if not IsIPMasqAgentEnabled}}
     {{if IsAzureCNI}}
     iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d {{GetParameter "vnetCidr"}} -j MASQUERADE
@@ -863,26 +830,19 @@ write_files:
   content: !!binary |
     {{GetVariableProperty "cloudInitData" "ipMasqAgentConfigmap"}}
 
-- path: /etc/kubernetes/kustomize/coredns/kustomization.yaml
+- path: /etc/kubernetes/addons/coredns.yaml
   permissions: "0600"
   encoding: gzip
   owner: root
   content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednskustomization"}}
+    {{GetVariableProperty "cloudInitData" "corednsAddonManifest"}}
 
-- path: /etc/kubernetes/kustomize/coredns/cluster-ip.yaml
+- path: /etc/kubernetes/addons/kube-proxy.yaml
   permissions: "0600"
   encoding: gzip
   owner: root
   content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednsclusterip"}}
-
-- path: /etc/kubernetes/kustomize/coredns/tolerations.yaml
-  permissions: "0600"
-  encoding: gzip
-  owner: root
-  content: !!binary |
-    {{GetVariableProperty "cloudInitData" "corednstolerations"}}
+    {{GetVariableProperty "cloudInitData" "kubeproxyAddonManifest"}}
 
 disk_setup:
   /dev/disk/azure/scsi1/lun0:
