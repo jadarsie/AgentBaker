@@ -379,7 +379,7 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure {
 				addons = append(addons, "/etc/kubernetes/addons/azure-network-policy.yaml")
 			}
-			if IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.21.0") {
+			if IsKubernetesVersionGe(cs.Properties.OrchestratorProfile.OrchestratorVersion, "1.22.0") {
 				addons = append(addons, "/etc/kubernetes/manifests/cloud-controller-manager.yaml")
 				addons = append(addons, "/etc/kubernetes/addons/cloud-node-manager.yaml")
 			}
