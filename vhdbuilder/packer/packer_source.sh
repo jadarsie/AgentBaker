@@ -60,7 +60,7 @@ copyPackerFiles() {
   AZUREDISK_CSI_DRIVER_SRC=/home/packer/azuredisk-csi-driver.yaml
   AZUREDISK_CSI_DRIVER_DST=/etc/kubernetes/addons/azuredisk-csi-driver.yaml
   CLOUD_CONTROLLER_MANAGER_SRC=/home/packer/cloud-controller-manager.yaml
-  CLOUD_CONTROLLER_MANAGER_DST=/etc/kubernetes/manifests/cloud-controller-manager.yaml
+  CLOUD_CONTROLLER_MANAGER_DST=/etc/kubernetes/addons/cloud-controller-manager.yaml
   CLOUD_NODE_MANAGER_SRC=/home/packer/cloud-node-manager.yaml
   CLOUD_NODE_MANAGER_DST=/etc/kubernetes/addons/cloud-node-manager.yaml
   COREDNS_CONFIGMAP_SRC=/home/packer/coredns-custom-configmap.yaml
