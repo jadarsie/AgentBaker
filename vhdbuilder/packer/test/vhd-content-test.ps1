@@ -70,8 +70,7 @@ function Test-FilesToCacheOnVHD
         # validat the code and winzip downloaded.
         "c:\akse-cache\win-k8s-docker\" = @(
             "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.20.13-azs/windowszip/v1.20.13-azs-1int.zip",
-            "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.21.7-azs/windowszip/v1.21.7-azs-1int.zip",
-            "https://kubernetesartifacts.azureedge.net/kubernetes/v1.22.4/windowszip/v1.22.4-1int.zip"
+            "https://kubernetesreleases.blob.core.windows.net/kubernetes/v1.21.7-azs/windowszip/v1.21.7-azs-1int.zip"
         );
         # Please add new winzips with Kuberentes version >= 1.20 here
         "c:\akse-cache\win-k8s-docker-and-containerd\" = @(
@@ -180,7 +179,9 @@ function Test-ImagesPulled
                 "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:v2.0.1",
                 "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:v2.2.0",
                 "mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:v1.5.1",
-                "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.4",
+                "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.5.1",
+                "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.6.0",
+                "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v0.7.0",
                 "mcr.microsoft.com/oss/kubernetes-csi/secrets-store/driver:v0.0.19",
                 "mcr.microsoft.com/oss/azure/secrets-store/provider-azure:0.0.12",
                 "mcr.microsoft.com/k8s/csi/azuredisk-csi:v1.0.0",

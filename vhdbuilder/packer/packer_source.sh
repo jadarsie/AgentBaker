@@ -59,10 +59,6 @@ copyPackerFiles() {
   AUDIT_POLICY_DEST=/etc/kubernetes/audit/audit-policy.yaml
   AZUREDISK_CSI_DRIVER_SRC=/home/packer/azuredisk-csi-driver.yaml
   AZUREDISK_CSI_DRIVER_DST=/etc/kubernetes/addons/azuredisk-csi-driver.yaml
-  CLOUD_CONTROLLER_MANAGER_SRC=/home/packer/cloud-controller-manager.yaml
-  CLOUD_CONTROLLER_MANAGER_DST=/etc/kubernetes/addons/cloud-controller-manager.yaml
-  CLOUD_NODE_MANAGER_SRC=/home/packer/cloud-node-manager.yaml
-  CLOUD_NODE_MANAGER_DST=/etc/kubernetes/addons/cloud-node-manager.yaml
   COREDNS_CONFIGMAP_SRC=/home/packer/coredns-custom-configmap.yaml
   COREDNS_CONFIGMAP_DST=/etc/kubernetes/addons/coredns-custom-configmap.yaml
   IP_MASQ_AGENT_SRC=/home/packer/ip-masq-agent.yaml
@@ -118,8 +114,6 @@ copyPackerFiles() {
 
   cpAndMode $AUDIT_POLICY_SRC $AUDIT_POLICY_DEST 600
   cpAndMode $AZUREDISK_CSI_DRIVER_SRC $AZUREDISK_CSI_DRIVER_DST 600
-  cpAndMode $CLOUD_CONTROLLER_MANAGER_SRC $CLOUD_CONTROLLER_MANAGER_DST 600
-  cpAndMode $CLOUD_NODE_MANAGER_SRC $CLOUD_NODE_MANAGER_DST 600
   cpAndMode $COREDNS_CONFIGMAP_SRC $COREDNS_CONFIGMAP_DST 600
   cpAndMode $IP_MASQ_AGENT_SRC $IP_MASQ_AGENT_DST 600
   cpAndMode $KUBE_METRICS_SERVER_SRC $KUBE_METRICS_SERVER_DST 600

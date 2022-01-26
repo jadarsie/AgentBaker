@@ -282,16 +282,6 @@
     },
     {
       "type": "file",
-      "source": "vhdbuilder/static/cloud-controller-manager.yaml",
-      "destination": "/home/packer/cloud-controller-manager.yaml"
-    },
-    {
-      "type": "file",
-      "source": "vhdbuilder/static/cloud-node-manager.yaml",
-      "destination": "/home/packer/cloud-node-manager.yaml"
-    },
-    {
-      "type": "file",
       "source": "vhdbuilder/static/coredns-custom-configmap.yaml",
       "destination": "/home/packer/coredns-custom-configmap.yaml"
     },
