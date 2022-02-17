@@ -1,0 +1,7 @@
+8c8
+< minlen = 14
+---
+> minlen=15
+9a10,11
+> difok=8
+> dictcheck=1

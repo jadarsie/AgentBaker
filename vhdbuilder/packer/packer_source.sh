@@ -73,6 +73,29 @@ copyPackerFiles() {
   AZURE_NETWORK_POLICY_DST=/etc/kubernetes/addons/azure-network-policy.yaml
   NOTICE_SRC=/home/packer/NOTICE.txt
   NOTICE_DEST=/NOTICE.txt
+  STIG_SRC=/home/packer/stig.sh
+  STIG_DEST=/opt/azure/containers/stig.sh
+  STIG_PATCH01_SRC=/home/packer/patches/50unattended-upgrades.patch
+  STIG_PATCH01_DEST=/opt/azure/containers/patches/50unattended-upgrades.patch
+  STIG_PATCH02_SRC=/home/packer/patches/auditd.conf.patch
+  STIG_PATCH02_DEST=/opt/azure/containers/patches/auditd.conf.patch
+  STIG_PATCH03_SRC=/home/packer/patches/autologout.sh.patch
+  STIG_PATCH03_DEST=/opt/azure/containers/patches/autologout.sh.patch
+  STIG_PATCH04_SRC=/home/packer/patches/DISASTIG.conf.patch
+  STIG_PATCH04_DEST=/opt/azure/containers/patches/DISASTIG.conf.patch
+  STIG_PATCH05_SRC=/home/packer/patches/issue.patch
+  STIG_PATCH05_DEST=/opt/azure/containers/patches/issue.patch
+  STIG_PATCH06_SRC=/home/packer/patches/limits.conf.patch
+  STIG_PATCH06_DEST=/opt/azure/containers/patches/limits.conf.patch
+  STIG_PATCH07_SRC=/home/packer/patches/login.defs.patch
+  STIG_PATCH07_DEST=/opt/azure/containers/patches/login.defs.patch
+  STIG_PATCH08_SRC=/home/packer/patches/pwquality.conf.patch
+  STIG_PATCH08_DEST=/opt/azure/containers/patches/pwquality.conf.patch
+  STIG_PATCH09_SRC=/home/packer/patches/sshd_config.patch
+  STIG_PATCH09_DEST=/opt/azure/containers/patches/sshd_config.patch
+  STIG_PATCH10_SRC=/home/packer/patches/stig.rules.patch
+  STIG_PATCH10_DEST=/opt/azure/containers/patches/stig.rules.patch
+
   if [[ ${UBUNTU_RELEASE} == "16.04" ]]; then
     SSHD_CONFIG_SRC=/home/packer/sshd_config_1604
   elif [[ ${UBUNTU_RELEASE} == "18.04" && ${ENABLE_FIPS,,} == "true" ]]; then
@@ -121,6 +144,18 @@ copyPackerFiles() {
   cpAndMode $POD_SECURITY_POLICY_SRC $POD_SECURITY_POLICY_DST 600
   cpAndMode $AZURE_NETWORK_POLICY_SRC $AZURE_NETWORK_POLICY_DST 600
   cpAndMode $NOTICE_SRC $NOTICE_DEST 444
+
+  cpAndMode $STIG_SRC $STIG_DEST 744
+  cpAndMode $STIG_PATCH01_SRC $STIG_PATCH01_DEST 444
+  cpAndMode $STIG_PATCH02_SRC $STIG_PATCH02_DEST 444
+  cpAndMode $STIG_PATCH03_SRC $STIG_PATCH03_DEST 444
+  cpAndMode $STIG_PATCH04_SRC $STIG_PATCH04_DEST 444
+  cpAndMode $STIG_PATCH05_SRC $STIG_PATCH05_DEST 444
+  cpAndMode $STIG_PATCH06_SRC $STIG_PATCH06_DEST 444
+  cpAndMode $STIG_PATCH07_SRC $STIG_PATCH07_DEST 444
+  cpAndMode $STIG_PATCH08_SRC $STIG_PATCH08_DEST 444
+  cpAndMode $STIG_PATCH09_SRC $STIG_PATCH09_DEST 444
+  cpAndMode $STIG_PATCH10_SRC $STIG_PATCH10_DEST 444
 }
 
 cpAndMode() {

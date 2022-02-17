@@ -316,6 +316,68 @@
       "destination": "/home/packer/NOTICE.txt"
     },
     {
+      "type": "file",
+      "source": "parts/linux/cloud-init/artifacts/stig.sh",
+      "destination": "/home/packer/stig.sh"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo mkdir -p /home/packer/patches",
+        "sudo chown -R $USER /home/packer/patches"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/50unattended-upgrades.patch",
+      "destination": "/home/packer/patches/50unattended-upgrades.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/auditd.conf.patch",
+      "destination": "/home/packer/patches/auditd.conf.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/autologout.sh.patch",
+      "destination": "/home/packer/patches/autologout.sh.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/DISASTIG.conf.patch",
+      "destination": "/home/packer/patches/DISASTIG.conf.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/issue.patch",
+      "destination": "/home/packer/patches/issue.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/limits.conf.patch",
+      "destination": "/home/packer/patches/limits.conf.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/login.defs.patch",
+      "destination": "/home/packer/patches/login.defs.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/pwquality.conf.patch",
+      "destination": "/home/packer/patches/pwquality.conf.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/sshd_config.patch",
+      "destination": "/home/packer/patches/sshd_config.patch"
+    },
+    {
+      "type": "file",
+      "source": "vhdbuilder/static/patches/stig.rules.patch",
+      "destination": "/home/packer/patches/stig.rules.patch"
+    },
+    {
       "type": "shell",
       "inline": [
         "sudo FEATURE_FLAGS={{user `feature_flags`}} BUILD_NUMBER={{user `build_number`}} BUILD_ID={{user `build_id`}} COMMIT={{user `commit`}} HYPERV_GENERATION={{user `hyperv_generation`}} CONTAINER_RUNTIME={{user `container_runtime`}} TELEPORTD_PLUGIN_DOWNLOAD_URL={{user `teleportd_plugin_download_url`}} ENABLE_FIPS={{user `enable_fips`}} /bin/bash -ux /home/packer/install-dependencies.sh"
@@ -331,6 +393,7 @@
       "type": "shell",
       "inline": [
         "sudo /bin/bash -eux /home/packer/cis.sh",
+        "sudo /bin/bash -eux /home/packer/stig.sh",
         "sudo /bin/bash -eux /home/packer/cleanup-vhd.sh",
         "sudo /usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync || exit 125"
       ]

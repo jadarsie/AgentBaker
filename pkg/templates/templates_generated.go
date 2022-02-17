@@ -51,6 +51,7 @@
 // linux/cloud-init/artifacts/sshd_config
 // linux/cloud-init/artifacts/sshd_config_1604
 // linux/cloud-init/artifacts/sshd_config_1804_fips
+// linux/cloud-init/artifacts/stig.sh
 // linux/cloud-init/artifacts/sysctl-d-60-CIS.conf
 // linux/cloud-init/artifacts/ubuntu/cse_helpers_ubuntu.sh
 // linux/cloud-init/artifacts/ubuntu/cse_install_ubuntu.sh
@@ -3373,7 +3374,7 @@ etcd:
       auto-tls: "false"
       peer-auto-tls: "false"
       cipher-suites: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
-      # initial-cl  uster      # initial-cluster: "aks-master-{{GetClusterID}}-0=https://192.168.255.248:2380,aks-master-{{GetClusterID}}-1=https://192.168.255.249:2380,aks-master-{{GetClusterID}}-2=https://192.168.255.250:2380"
+      # initial-cluster: "aks-master-{{GetClusterID}}-0=https://192.168.255.248:2380,aks-master-{{GetClusterID}}-1=https://192.168.255.249:2380,aks-master-{{GetClusterID}}-2=https://192.168.255.250:2380"
 networking:
   podSubnet: {{PodCIDR}}
   serviceSubnet: {{ServiceCidr}}
@@ -4696,6 +4697,56 @@ func linuxCloudInitArtifactsSshd_config_1804_fips() (*asset, error) {
 	return a, nil
 }
 
+var _linuxCloudInitArtifactsStigSh = []byte(`#!/bin/bash
+
+touch /etc/audit/rules.d/stig.rules
+chmod 0640 /etc/audit/rules.d/stig.rules
+patch --ignore-whitespace /etc/audit/rules.d/stig.rules < /opt/azure/containers/patches/stig.rules.patch
+
+# touch /etc/issue
+# chmod 0644 /etc/issue
+# patch --ignore-whitespace /etc/issue < /opt/azure/containers/patches/issue.patch
+
+touch /etc/modprobe.d/DISASTIG.conf
+chmod 0600 /etc/modprobe.d/DISASTIG.conf
+patch --ignore-whitespace /etc/modprobe.d/DISASTIG.conf < /opt/azure/containers/patches/DISASTIG.conf.patch
+
+touch /etc/profile.d/autologout.sh
+chmod 0600 /etc/profile.d/autologout.sh
+patch --ignore-whitespace /etc/profile.d/autologout.sh < /opt/azure/containers/patches/autologout.sh.patch
+
+patch --ignore-whitespace /etc/login.defs < /opt/azure/containers/patches/login.defs.patch
+patch --ignore-whitespace /etc/apt/apt.conf.d/50unattended-upgrades < /opt/azure/containers/patches/50unattended-upgrades.patch
+patch --ignore-whitespace /etc/audit/auditd.conf < /opt/azure/containers/patches/auditd.conf.patch
+patch --ignore-whitespace /etc/security/limits.conf < /opt/azure/containers/patches/limits.conf.patch
+patch --ignore-whitespace /etc/security/pwquality.conf < /opt/azure/containers/patches/pwquality.conf.patch
+patch --ignore-whitespace /etc/ssh/sshd_config < /opt/azure/containers/patches/sshd_config.patch
+
+augenrules --load
+
+systemctl mask ctrl-alt-del.target
+systemctl daemon-reload
+systemctl restart sshd
+systemctl restart auditd.service
+
+#EOF
+`)
+
+func linuxCloudInitArtifactsStigShBytes() ([]byte, error) {
+	return _linuxCloudInitArtifactsStigSh, nil
+}
+
+func linuxCloudInitArtifactsStigSh() (*asset, error) {
+	bytes, err := linuxCloudInitArtifactsStigShBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/stig.sh", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _linuxCloudInitArtifactsSysctlD60CisConf = []byte(`# 3.1.2 Ensure packet redirect sending is disabled
 net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.default.send_redirects = 0
@@ -4881,7 +4932,7 @@ installDeps() {
     aptmarkWALinuxAgent hold
     apt_get_update || exit $ERR_APT_UPDATE_TIMEOUT
     apt_get_dist_upgrade || exit $ERR_APT_DIST_UPGRADE_TIMEOUT
-    for apt_package in apache2-utils apt-transport-https blobfuse=1.3.7 ca-certificates ceph-common cgroup-lite cifs-utils conntrack cracklib-runtime ebtables ethtool fuse git glusterfs-client htop iftop init-system-helpers iotop iproute2 ipset iptables jq libpam-pwquality libpwquality-tools mount nfs-common pigz socat sysfsutils sysstat traceroute util-linux xz-utils zip chrony; do
+    for apt_package in apache2-utils apt-transport-https blobfuse=1.3.7 ca-certificates ceph-common cgroup-lite cifs-utils conntrack cracklib-runtime ebtables ethtool fuse git glusterfs-client htop iftop init-system-helpers iotop iproute2 ipset iptables jq libpam-pwquality libpwquality-tools mount nfs-common pigz socat sysfsutils sysstat traceroute util-linux xz-utils zip chrony vlock auditd ssh libpam-pkcs11 aide opensc-pkcs11 libpam-apparmor; do
       if ! apt_get_install 30 1 600 $apt_package; then
         journalctl --no-pager -u $apt_package
         exit $ERR_APT_INSTALL_TIMEOUT
@@ -9041,6 +9092,7 @@ var _bindata = map[string]func() (*asset, error){
 	"linux/cloud-init/artifacts/sshd_config":                               linuxCloudInitArtifactsSshd_config,
 	"linux/cloud-init/artifacts/sshd_config_1604":                          linuxCloudInitArtifactsSshd_config_1604,
 	"linux/cloud-init/artifacts/sshd_config_1804_fips":                     linuxCloudInitArtifactsSshd_config_1804_fips,
+	"linux/cloud-init/artifacts/stig.sh":                                   linuxCloudInitArtifactsStigSh,
 	"linux/cloud-init/artifacts/sysctl-d-60-CIS.conf":                      linuxCloudInitArtifactsSysctlD60CisConf,
 	"linux/cloud-init/artifacts/ubuntu/cse_helpers_ubuntu.sh":              linuxCloudInitArtifactsUbuntuCse_helpers_ubuntuSh,
 	"linux/cloud-init/artifacts/ubuntu/cse_install_ubuntu.sh":              linuxCloudInitArtifactsUbuntuCse_install_ubuntuSh,
@@ -9161,6 +9213,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				"sshd_config":                     &bintree{linuxCloudInitArtifactsSshd_config, map[string]*bintree{}},
 				"sshd_config_1604":                &bintree{linuxCloudInitArtifactsSshd_config_1604, map[string]*bintree{}},
 				"sshd_config_1804_fips":           &bintree{linuxCloudInitArtifactsSshd_config_1804_fips, map[string]*bintree{}},
+				"stig.sh":                         &bintree{linuxCloudInitArtifactsStigSh, map[string]*bintree{}},
 				"sysctl-d-60-CIS.conf":            &bintree{linuxCloudInitArtifactsSysctlD60CisConf, map[string]*bintree{}},
 				"ubuntu": &bintree{nil, map[string]*bintree{
 					"cse_helpers_ubuntu.sh": &bintree{linuxCloudInitArtifactsUbuntuCse_helpers_ubuntuSh, map[string]*bintree{}},

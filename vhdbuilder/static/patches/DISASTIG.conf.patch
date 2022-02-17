@@ -1,0 +1,4 @@
+0a1,2
+> install usb-storage /bin/true
+> blacklist usb-storage
+\ No newline at end of file

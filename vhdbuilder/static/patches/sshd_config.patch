@@ -1,0 +1,14 @@
+9c9
+< MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256
+---
+> MACs hmac-sha2-512,hmac-sha2-256
+11c11
+< Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+---
+> Ciphers aes256-ctr,aes192-ctr,aes128-ctr
+14c14
+< ClientAliveInterval 300
+---
+> ClientAliveInterval 600
+86a87
+> X11UseLocalhost yes
