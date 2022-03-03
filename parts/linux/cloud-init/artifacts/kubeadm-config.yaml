@@ -12,6 +12,8 @@ etcd:
       snapshot-count: "5000"
       auto-tls: "false"
       peer-auto-tls: "false"
+      cipher-suites: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+      # initial-cl  uster      # initial-cluster: "aks-master-{{GetClusterID}}-0=https://192.168.255.248:2380,aks-master-{{GetClusterID}}-1=https://192.168.255.249:2380,aks-master-{{GetClusterID}}-2=https://192.168.255.250:2380"
 networking:
   podSubnet: {{PodCIDR}}
   serviceSubnet: {{ServiceCidr}}
@@ -138,4 +140,5 @@ protectKernelDefaults: true
 streamingConnectionIdleTimeout: 4h
 tlsCertFile: "/etc/kubernetes/certs/kubeletserver.crt"
 tlsPrivateKeyFile: "/etc/kubernetes/certs/kubeletserver.key"
+tlsCipherSuites: [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256]
 #EOF

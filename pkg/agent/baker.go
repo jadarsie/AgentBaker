@@ -351,12 +351,8 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		// TODO ASH DELETE
 		"GetAddonsURI": func() string {
 			addons := []string{
-				"/etc/kubernetes/addons/azuredisk-csi-driver.yaml",
-				"/etc/kubernetes/addons/coredns-custom-configmap.yaml",
 				"/etc/kubernetes/addons/ip-masq-agent.yaml",
 				"/etc/kubernetes/addons/ip-masq-agent-configmap.yaml",
-				"/etc/kubernetes/addons/kube-metrics-server.yaml",
-				"/etc/kubernetes/addons/kube-state-metrics.yaml",
 			}
 			if cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure {
 				addons = append(addons, "/etc/kubernetes/addons/azure-network-policy.yaml")
@@ -472,6 +468,9 @@ func getContainerServiceFuncMap(config *datamodel.NodeBootstrappingConfiguration
 		},
 		"IsAzureCNI": func() bool {
 			return cs.Properties.OrchestratorProfile.IsAzureCNI()
+		},
+		"GetClusterID": func() string {
+			return cs.Properties.GetClusterID()
 		},
 		"IsMariner": func() bool {
 			return strings.EqualFold(string(config.OSSKU), string("CBLMariner"))
