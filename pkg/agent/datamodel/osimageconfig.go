@@ -48,9 +48,9 @@ var (
 
 	AKSWindowsServer2019OSImageConfig = AzureOSImageConfig{
 		ImageOffer:     "aks-windows",
-		ImageSku:       "aks-2019-datacenter-core-smalldisk-2107",
+		ImageSku:       "aks-2019-datacenter-core-smalldisk-2201",
 		ImagePublisher: "microsoft-aks",
-		ImageVersion:   "17763.2061.210714",
+		ImageVersion:   "17763.2300.220121",
 	}
 
 	ACC1604OSImageConfig = AzureOSImageConfig{
@@ -62,9 +62,9 @@ var (
 
 	AKSUbuntuContainerd1804OSImageConfig = AzureOSImageConfig{
 		ImageOffer:     "aks-aez",
-		ImageSku:       "aks-ubuntu-containerd-1804-2021-q2",
+		ImageSku:       "aks-ubuntu-containerd-1804-2022-q1",
 		ImagePublisher: "microsoft-aks",
-		ImageVersion:   "2021.04.27",
+		ImageVersion:   "2022.01.21",
 	}
 
 	AKSUbuntuContainerd1804Gen2OSImageConfig = AzureOSImageConfig{

@@ -7,45 +7,6 @@ configureAdminUser(){
     chage -l "${ADMINUSER}"
 }
 
-RefreshEtcdManifest() {
-    # If initial-cluster does not contains all 3 ETCD cluster
-    # Wait for the ETCD started on all nodes and update the ETCD configration by re-join the node to the cluster
-
-    extractEtcdctl || exit $ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST
-
-    ETCD_INITIAL_CLUSTER_STRING=$(grep -E "initial-cluster=" /etc/kubernetes/manifests/etcd.yaml | grep -oE "aks-master.*")
-    echo "ETCD_INITIAL_CLUSTER_STRING $ETCD_INITIAL_CLUSTER_STRING"
-    IFS=',' read -a ETCD_INITIAL_CLUSTER_STRING_ARRAY <<< $ETCD_INITIAL_CLUSTER_STRING
-    echo "ETCD_INITIAL_CLUSTER_STRING_ARRAY Count ${#ETCD_INITIAL_CLUSTER_STRING_ARRAY[@]}"
-
-    if [ 3 !=  ${#ETCD_INITIAL_CLUSTER_STRING_ARRAY[@]} ]; then
-                ARE_ETCD_MEMBERS_READY=false
-                for i in {1..30}
-                do
-                        ETCDCTL_API=3
-                        ETCD_MEMBER_COUNT=$(retrycmd_if_failure_no_stats 10 15 300 etcdctl member list --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/etcd/server.key | grep -c "started, aks-master")
-                        if [ $ETCD_MEMBER_COUNT == 3 ]
-                        then
-                                ARE_ETCD_MEMBERS_READY=true
-                                break
-                        fi
-                        sleep 30
-                done
-                retrycmd_if_failure_no_stats 10 15 300 etcdctl member list --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/etcd/server.key
-                echo "ARE_ETCD_MEMBERS_READY $ARE_ETCD_MEMBERS_READY"
-                if [ "$ARE_ETCD_MEMBERS_READY" == "true" ] ; then
-                        echo "All ETCD members are ready"
-                        retrycmd_if_failure_no_stats 10 15 300 kubeadm join phase control-plane-join etcd --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST
-                        echo "etcd manifest update is completed"
-                else
-                        echo "Some ETCD members are not ready"
-                        exit $ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST
-                fi
-    else
-        echo "ETCD_INITIAL_CLUSTER_STRING contains 3 members, skipping etcd manifest update"
-    fi
-}
-
 customizeK8s() {
     wait_for_file 1200 1 /etc/kubernetes/kubeadm-config.yaml || exit $ERR_FILE_WATCH_TIMEOUT
     wait_for_file 1200 1 /etc/kubernetes/addons/kube-proxy.yaml || exit $ERR_FILE_WATCH_TIMEOUT
@@ -100,7 +61,9 @@ customizeK8s() {
         for ADDON in {{GetAddonsURI}}; do
             retrycmd_if_failure_no_stats 10 15 180 kubectl apply -f ${ADDON} --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_APPLY_ADDON
         done
+        sed -i "s|# initial-cluster:|initial-cluster:|1" ${CONFIG}
     else
+        sed -i "s|# initial-cluster:|initial-cluster:|1" ${CONFIG}
         retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare certs --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
         retrycmd_if_failure_no_stats 10 15 180 kubeadm join phase control-plane-prepare kubeconfig --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_GEN_FILES
 
@@ -141,8 +104,6 @@ customizeK8s() {
         retrycmd_if_failure_no_stats 10 15 300 kubeadm join phase control-plane-join all --config ${CONFIG} -v 9 || exit $ERR_ASH_KUBEADM_INIT_JOIN
         retrycmd_if_failure_no_stats 10 15 180 kubectl uncordon ${NODE_NAME} --kubeconfig ${KUBECONFIG} || exit $ERR_ASH_KUBEADM_INIT_JOIN
     fi
-
-    RefreshEtcdManifest || exit $ERR_ASH_KUBEADM_REFRESH_ETCD_MANIFEST
 }
 
 KubeControllerManagerPatch() {

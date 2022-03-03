@@ -116,7 +116,7 @@ func getCSECommandVariables(config *datamodel.NodeBootstrappingConfiguration) pa
 		"virtualNetworkResourceGroupName": cs.Properties.GetVNetResourceGroupName(),
 		"routeTableName":                  cs.Properties.GetRouteTableName(),
 		"primaryAvailabilitySetName":      cs.Properties.GetPrimaryAvailabilitySetName(),
-		"primaryScaleSetName":             config.PrimaryScaleSetName,
+		"primaryScaleSetName":             cs.Properties.GetPrimaryScaleSetName(),
 		"useManagedIdentityExtension":     useManagedIdentity(cs),
 		"useInstanceMetadata":             useInstanceMetadata(cs),
 		"loadBalancerSku":                 cs.Properties.OrchestratorProfile.KubernetesConfig.LoadBalancerSku,
