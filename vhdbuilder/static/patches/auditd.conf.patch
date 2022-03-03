@@ -1,0 +1,4 @@
+26c26
+< disk_full_action = SUSPEND
+---
+> disk_full_action = SYSLOG
