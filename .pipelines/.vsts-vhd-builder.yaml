@@ -1,4 +1,4 @@
-name: $(Date:yyyyMMdd)$(Rev:.r)_$(OS_SKU)$(OS_VERSION)
+name: $(Date:yyyyMMdd)$(Rev:.r)_$(OS_SKU)_$(OS_VERSION)_$(Build.SourceVersion)
 trigger: none
 
 # Three modes in prioritized order

@@ -1,4 +1,4 @@
-name: $(Date:yyyyMMdd)$(Rev:.r)_Windows_$(WINDOWS_SKU)
+name: $(Date:yyyyMMdd)$(Rev:.r)_Windows_$(WINDOWS_SKU)_$(Build.SourceVersion)
 trigger: none
 
 parameters:
