@@ -1,4 +1,4 @@
-name: $(Date:yyyyMMdd)$(Rev:.r)_$(OS_SKU)$(OS_VERSION)_$(HYPERV_GENERATION)_$(FEATURE_FLAGS)_$(Build.SourceBranchName)
+name: $(Date:yyyyMMdd)$(Rev:.r)_$(OS_SKU)_$(OS_VERSION)_$(Build.SourceVersion)
 trigger: none
 
 # Three modes in prioritized order
@@ -94,6 +94,7 @@ phases:
           -e CLASSIC_BLOB=${CLASSIC_BLOB} \
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           -e OS_DISK_SAS=${OS_DISK_SAS} \
+          -e FILE_NAME=$(Build.BuildNumber).vhd \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
         displayName: Copying resource to Classic Storage Account
       - bash: |
