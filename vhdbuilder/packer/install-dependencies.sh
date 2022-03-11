@@ -97,7 +97,7 @@ cliTool="docker"
 
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime"
-  containerd_version="1.4.8"
+  containerd_version="1.4.12"
   installStandaloneContainerd ${containerd_version}
   echo "  - [installed] containerd v${containerd_version}" >> ${VHD_LOGS_FILEPATH}
   if [[ $OS == $UBUNTU_OS_NAME ]]; then
@@ -130,6 +130,7 @@ if [[ $OS == $UBUNTU_OS_NAME ]]; then
   RUNC_VERSIONS="
   1.0.0-rc92
   1.0.0-rc95
+  1.0.3
   "
   for RUNC_VERSION in $RUNC_VERSIONS; do
     downloadDebPkgToFile "moby-runc" ${RUNC_VERSION/\-/\~} ${RUNC_DOWNLOADS_DIR}
