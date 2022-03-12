@@ -44,7 +44,8 @@
       "versions": [
         "v0.3.6",
         "v0.4.4",
-        "v0.5.0"
+        "v0.5.0",
+        "v0.5.1"
       ]
     },
     {
@@ -277,13 +278,15 @@
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/livenessprobe:*",
       "versions": [
-        "v2.3.0"
+        "v2.3.0",
+        "v2.5.0"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:*",
       "versions": [
-        "v2.2.0"
+        "v2.2.0",
+        "v2.4.0"
       ]
     },
     {
@@ -402,19 +405,22 @@
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-attacher:*",
       "versions": [
-        "v3.1.0"
+        "v3.1.0",
+        "v3.3.0"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner:*",
       "versions": [
-        "v2.1.1"
+        "v2.1.1",
+        "v2.2.2"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/csi-resizer:*",
       "versions": [
-        "v1.1.0"
+        "v1.1.0",
+        "v1.3.0"
       ]
     },
     {
@@ -433,6 +439,24 @@
       "downloadURL": "mcr.microsoft.com/oss/kubernetes/kube-state-metrics:*",
       "versions": [
         "v1.9.8"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/autoscaler/cluster-autoscaler:*",
+      "versions": [
+        "v1.20.11-aks"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes/hyperkube:*",
+      "versions": [
+        "v1.18.20.3"
+      ]
+    },
+    {
+      "downloadURL": "mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:*",
+      "versions": [
+        "v1.10.0"
       ]
     }
   ],
