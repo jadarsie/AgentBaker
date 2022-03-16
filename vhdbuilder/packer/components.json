@@ -317,6 +317,12 @@
       ]
     },
     {
+      "downloadURL": "mcr.microsoft.com/oss/fluent/fluentd-kubernetes-daemonset-azureblob:*",
+      "versions": [
+        "v1.12.4"
+      ]
+    },
+    {
       "downloadURL": "mcr.microsoft.com/oss/virtual-kubelet/virtual-kubelet:*",
       "versions": [
         "1.3.3",
