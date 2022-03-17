@@ -7,6 +7,8 @@ CNI_BIN_DIR="/opt/cni/bin"
 CNI_DOWNLOADS_DIR="/opt/cni/downloads"
 CRICTL_DOWNLOAD_DIR="/opt/crictl/downloads"
 CRICTL_BIN_DIR="/usr/local/bin"
+NERDCTL_DOWNLOAD_DIR="/opt/nerdctl/downloads"
+NERDCTL_BIN_DIR="/usr/local/bin"
 CONTAINERD_DOWNLOADS_DIR="/opt/containerd/downloads"
 RUNC_DOWNLOADS_DIR="/opt/runc/downloads"
 K8S_DOWNLOADS_DIR="/opt/kubernetes/downloads"
@@ -92,6 +94,18 @@ installCrictl() {
     fi
     rm -rf ${CRICTL_DOWNLOAD_DIR}
 }
+
+downloadNerdctl() {
+    NERDCTL_VERSION=$1
+    mkdir -p $NERDCTL_DOWNLOAD_DIR
+    NERDCTL_DOWNLOAD_URL="https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-amd64.tar.gz"
+    NERDCTL_TGZ_TEMP=${NERDCTL_DOWNLOAD_URL##*/}
+    retrycmd_curl_file 10 5 60 "$NERDCTL_DOWNLOAD_DIR/${NERDCTL_TGZ_TEMP}" ${NERDCTL_DOWNLOAD_URL}
+    tar -xzf "$NERDCTL_DOWNLOAD_DIR/${NERDCTL_TGZ_TEMP}" -C $NERDCTL_BIN_DIR
+    chown -R root:root $NERDCTL_BIN_DIR
+    chmod -R 755 $NERDCTL_BIN_DIR
+}
+
 {{- if TeleportEnabled}}
 downloadTeleportdPlugin() {
     DOWNLOAD_URL=$1
