@@ -94,6 +94,7 @@ MOBY_VERSION="19.03.14"
 installMoby
 echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
 cliTool="docker"
+pullContainerImage ${cliTool} mcr.microsoft.com/oss/fluent/fluentd-kubernetes-daemonset-azureblob:v1.12.4
 
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime"
