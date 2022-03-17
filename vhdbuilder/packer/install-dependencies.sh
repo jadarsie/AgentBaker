@@ -98,12 +98,6 @@ fi
 downloadKrustlet
 echo "  - krustlet ${KRUSTLET_VERSION}" >> ${VHD_LOGS_FILEPATH}
 
-MOBY_VERSION="19.03.14"
-installMoby
-echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
-cliTool="docker"
-pullContainerImage ${cliTool} mcr.microsoft.com/oss/fluent/fluentd-kubernetes-daemonset-azureblob:v1.12.4
-
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime"
   containerd_version="1.4.12"
@@ -115,6 +109,13 @@ if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
     downloadContainerd ${containerd_version}
     echo "  - [cached] containerd v${containerd_version}" >> ${VHD_LOGS_FILEPATH}
   fi
+  NERDCTL_VERSIONS="
+  0.17.1
+  "
+  for NERDCTL_VERSION in ${NERDCTL_VERSIONS}; do
+    downloadNerdctl ${NERDCTL_VERSION}
+    echo "  - nerdctl version ${NERDCTL_VERSION}" >> ${VHD_LOGS_FILEPATH}
+  done
   CRICTL_VERSIONS="
   1.20.0
   1.21.0
