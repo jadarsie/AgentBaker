@@ -139,22 +139,9 @@ if [[ $OS == $UBUNTU_OS_NAME ]]; then
   done
 fi
 
-
 installBpftrace
 echo "  - bpftrace" >> ${VHD_LOGS_FILEPATH}
 
-if [[ $OS == $UBUNTU_OS_NAME ]]; then
-installGPUDrivers
-echo "  - nvidia-docker2 nvidia-container-runtime" >> ${VHD_LOGS_FILEPATH}
-retrycmd_if_failure 30 5 3600 apt-get -o Dpkg::Options::="--force-confold" install -y nvidia-container-runtime="${NVIDIA_CONTAINER_RUNTIME_VERSION}+docker18.09.2-1" --download-only || exit $ERR_GPU_DRIVERS_INSTALL_TIMEOUT
-echo "  - nvidia-container-runtime=${NVIDIA_CONTAINER_RUNTIME_VERSION}+docker18.09.2-1" >> ${VHD_LOGS_FILEPATH}
-echo "  - nvidia-gpu-driver-version=${GPU_DV}" >> ${VHD_LOGS_FILEPATH}
-
-if grep -q "fullgpu" <<< "$FEATURE_FLAGS"; then
-    echo "  - ensureGPUDrivers" >> ${VHD_LOGS_FILEPATH}
-    ensureGPUDrivers
-fi
-fi
 
 installBcc
 cat << EOF >> ${VHD_LOGS_FILEPATH}
@@ -227,74 +214,6 @@ for CNI_PLUGIN_VERSION in $CNI_PLUGIN_VERSIONS; do
     downloadCNI
     echo "  - CNI plugin version ${CNI_PLUGIN_VERSION}" >> ${VHD_LOGS_FILEPATH}
 done
-
-if [[ $OS == $UBUNTU_OS_NAME ]]; then
-NVIDIA_DEVICE_PLUGIN_VERSIONS="
-v0.9.0
-"
-for NVIDIA_DEVICE_PLUGIN_VERSION in ${NVIDIA_DEVICE_PLUGIN_VERSIONS}; do
-    CONTAINER_IMAGE="mcr.microsoft.com/oss/nvidia/k8s-device-plugin:${NVIDIA_DEVICE_PLUGIN_VERSION}"
-    pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
-    echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
-done
-
-# GPU device plugin
-if grep -q "fullgpu" <<< "$FEATURE_FLAGS" && grep -q "gpudaemon" <<< "$FEATURE_FLAGS"; then
-  kubeletDevicePluginPath="/var/lib/kubelet/device-plugins"
-  mkdir -p $kubeletDevicePluginPath
-  echo "  - $kubeletDevicePluginPath" >> ${VHD_LOGS_FILEPATH}
-
-  DEST="/usr/local/nvidia/bin"
-  mkdir -p $DEST
-  if [[ "${CONTAINER_RUNTIME}" == "containerd" ]]; then
-    ctr --namespace k8s.io run --rm --mount type=bind,src=${DEST},dst=${DEST},options=bind:rw --cwd ${DEST} "mcr.microsoft.com/oss/nvidia/k8s-device-plugin:v0.9.0" plugingextract /bin/sh -c "cp /usr/bin/nvidia-device-plugin $DEST" || exit 1
-  else
-    docker run --rm --entrypoint "" -v $DEST:$DEST "mcr.microsoft.com/oss/nvidia/k8s-device-plugin:v0.9.0" /bin/bash -c "cp /usr/bin/nvidia-device-plugin $DEST" || exit 1
-  fi
-  chmod a+x $DEST/nvidia-device-plugin
-  echo "  - extracted nvidia-device-plugin..." >> ${VHD_LOGS_FILEPATH}
-  ls -ltr $DEST >> ${VHD_LOGS_FILEPATH}
-
-  systemctlEnableAndStart nvidia-device-plugin || exit 1
-fi
-
-installSGX=${SGX_INSTALL:-"False"}
-if [[ ${installSGX} == "True" ]]; then
-    SGX_DEVICE_PLUGIN_VERSIONS="1.0"
-    for SGX_DEVICE_PLUGIN_VERSION in ${SGX_DEVICE_PLUGIN_VERSIONS}; do
-        CONTAINER_IMAGE="mcr.microsoft.com/aks/acc/sgx-device-plugin:${SGX_DEVICE_PLUGIN_VERSION}"
-        pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
-        echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
-    done
-
-    SGX_PLUGIN_VERSIONS="
-    0.2
-    0.4
-    "
-    for SGX_PLUGIN_VERSION in ${SGX_PLUGIN_VERSIONS}; do
-        CONTAINER_IMAGE="mcr.microsoft.com/aks/acc/sgx-plugin:${SGX_PLUGIN_VERSION}"
-        pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
-        echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
-    done
-
-    SGX_WEBHOOK_VERSIONS="
-    0.6
-    0.9
-    "
-    for SGX_WEBHOOK_VERSION in ${SGX_WEBHOOK_VERSIONS}; do
-        CONTAINER_IMAGE="mcr.microsoft.com/aks/acc/sgx-webhook:${SGX_WEBHOOK_VERSION}"
-        pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
-        echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
-    done
-
-    SGX_QUOTE_HELPER_VERSIONS="2.0"
-    for SGX_QUOTE_HELPER_VERSION in ${SGX_QUOTE_HELPER_VERSIONS}; do
-        CONTAINER_IMAGE="mcr.microsoft.com/aks/acc/sgx-attestation:${SGX_QUOTE_HELPER_VERSION}"
-        pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
-        echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
-    done
-fi
-fi
 
 NGINX_VERSIONS="1.13.12-alpine"
 for NGINX_VERSION in ${NGINX_VERSIONS}; do
