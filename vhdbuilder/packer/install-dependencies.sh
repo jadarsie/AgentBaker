@@ -66,6 +66,14 @@ cat << EOF >> ${VHD_LOGS_FILEPATH}
   - util-linux
   - xz-utils
   - zip
+  - chrony
+  - vlock
+  - auditd
+  - ssh
+  - libpam-pkcs11 
+  - aide 
+  - opensc-pkcs11 
+  - libpam-apparmor
 EOF
 
 if [[ ${UBUNTU_RELEASE} == "18.04" && ${ENABLE_FIPS,,} == "true" ]]; then
@@ -171,10 +179,8 @@ for imageToBePulled in ${ContainerImages[*]}; do
 done
 
 VNET_CNI_VERSIONS="
-1.2.0_hotfix
-1.2.0
-1.1.8
-1.4.0
+1.4.14
+1.4.21
 "
 for VNET_CNI_VERSION in $VNET_CNI_VERSIONS; do
     VNET_CNI_PLUGINS_URL="https://acs-mirror.azureedge.net/azure-cni/v${VNET_CNI_VERSION}/binaries/azure-vnet-cni-linux-amd64-v${VNET_CNI_VERSION}.tgz"
@@ -182,33 +188,10 @@ for VNET_CNI_VERSION in $VNET_CNI_VERSIONS; do
     echo "  - Azure CNI version ${VNET_CNI_VERSION}" >> ${VHD_LOGS_FILEPATH}
 done
 
-# merge with above after two more version releases
-SWIFT_CNI_VERSIONS="
-1.4.7
-1.4.0
-1.2.7
-"
-
-for VNET_CNI_VERSION in $SWIFT_CNI_VERSIONS; do
-    VNET_CNI_PLUGINS_URL="https://acs-mirror.azureedge.net/azure-cni/v${VNET_CNI_VERSION}/binaries/azure-vnet-cni-swift-linux-amd64-v${VNET_CNI_VERSION}.tgz"
-    downloadAzureCNI
-    echo "  - Azure Swift CNI version ${VNET_CNI_VERSION}" >> ${VHD_LOGS_FILEPATH}
-done
-
 CNI_PLUGIN_VERSIONS="
-0.7.6
-0.7.5
-0.7.1
+0.9.1
 "
-for CNI_PLUGIN_VERSION in $CNI_PLUGIN_VERSIONS; do
-    CNI_PLUGINS_URL="https://acs-mirror.azureedge.net/cni/cni-plugins-amd64-v${CNI_PLUGIN_VERSION}.tgz"
-    downloadCNI
-    echo "  - CNI plugin version ${CNI_PLUGIN_VERSION}" >> ${VHD_LOGS_FILEPATH}
-done
 
-CNI_PLUGIN_VERSIONS="
-0.8.6
-"
 for CNI_PLUGIN_VERSION in $CNI_PLUGIN_VERSIONS; do
     CNI_PLUGINS_URL="https://acs-mirror.azureedge.net/cni-plugins/v${CNI_PLUGIN_VERSION}/binaries/cni-plugins-linux-amd64-v${CNI_PLUGIN_VERSION}.tgz"
     downloadCNI
