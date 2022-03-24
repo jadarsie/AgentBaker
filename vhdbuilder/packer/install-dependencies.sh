@@ -95,9 +95,6 @@ if [[ $OS == $MARINER_OS_NAME ]]; then
     networkdWorkaround
 fi
 
-downloadKrustlet
-echo "  - krustlet ${KRUSTLET_VERSION}" >> ${VHD_LOGS_FILEPATH}
-
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime"
   containerd_version="1.4.12"
@@ -138,7 +135,6 @@ echo "  - runc version ${INSTALLED_RUNC_VERSION}" >> ${VHD_LOGS_FILEPATH}
 ## for ubuntu-based images, cache multiple versions of runc
 if [[ $OS == $UBUNTU_OS_NAME ]]; then
   RUNC_VERSIONS="
-  1.0.0-rc92
   1.0.0-rc95
   1.0.3
   "
@@ -147,16 +143,6 @@ if [[ $OS == $UBUNTU_OS_NAME ]]; then
     echo "  - [cached] runc ${RUNC_VERSION}" >> ${VHD_LOGS_FILEPATH}
   done
 fi
-
-installBpftrace
-echo "  - bpftrace" >> ${VHD_LOGS_FILEPATH}
-
-
-installBcc
-cat << EOF >> ${VHD_LOGS_FILEPATH}
-  - bcc-tools
-  - libbcc-examples
-EOF
 
 installImg
 echo "  - img" >> ${VHD_LOGS_FILEPATH}
